@@ -134,6 +134,10 @@ body, .content-wrapper, .main-header, .main-sidebar {
   --cor-fundo-mapa: #EDF1F7;
   --cor-fundo-desabilitado: #F2F4F7;
 
+  /* Cinzas da silhueta de referência das pétalas */
+  --cor-silhueta: #F1F3F7;
+  --cor-silhueta-traco: #D8DCE3;
+
   /* Cores dos esqueletos de carregamento */
   --cor-esqueleto-rgb: 224 233 242;
   --cor-esqueleto-base: rgb(var(--cor-esqueleto-rgb) / 68%);
@@ -1437,6 +1441,15 @@ input:focus-visible,
   max-height: 470px;
   overflow: visible;
   filter: drop-shadow(0 4px 8px rgb(var(--cor-azul-escuro-rgb) / 0.05));
+}
+
+/* Mantendo a silhueta de referência como pano de fundo, sem capturar o mouse */
+.silhueta-petala {
+  pointer-events: none;
+  fill: var(--cor-silhueta);
+  stroke: var(--cor-silhueta-traco);
+  stroke-width: 1;
+  stroke-dasharray: 2,3;
 }
 
 /* Destacando cada pétala sob o mouse ou foco de teclado */

@@ -15,6 +15,15 @@ PETALAS_RAIO <- 185
 # Definindo o comprimento do caminho base da pétala no sistema do viewBox
 PETALAS_COMPRIMENTO <- 170
 
+# Definindo o caminho base da pétala, compartilhado pela silhueta e pela forma real
+PETALAS_CAMINHO <- sprintf(
+  "M 0 0 C -26 -40, -28 -120, 0 -%s C 28 -120, 26 -40, 0 0 Z",
+  PETALAS_COMPRIMENTO
+)
+
+# Definindo a escala da pétala na extensão máxima, usada pela silhueta de referência
+PETALAS_ESCALA_MAXIMA <- PETALAS_RAIO / PETALAS_COMPRIMENTO
+
 # Definindo a área visível do desenho, cortando as sobras de topo e laterais
 PETALAS_VIEWBOX <- "45 60 410 236"
 
@@ -51,6 +60,36 @@ tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
   )
 }
 
+#' Definindo uma função que monta a transformação de uma pétala no leque
+#'
+#' @param angulo Ângulo da pétala no leque, em graus.
+#' @param escala Fator de escala da pétala.
+#' @return Texto da transformação SVG que posiciona a pétala.
+#' Usada em: fct_petalas.R (petala_silhueta_svg e petala_svg).
+#' @noRd
+transformacao_petala <- function(angulo, escala) {
+  # Posicionando a pétala no centro do leque, girada e escalada pelo valor
+  sprintf(
+    "translate(%s, %s) rotate(%s) scale(%s)",
+    PETALAS_CX, PETALAS_CY, angulo, round(escala, 3)
+  )
+}
+
+#' Definindo uma função que monta a silhueta de referência de uma pétala
+#'
+#' @param i Índice do bloco.
+#' @return Elemento HTML com o caminho SVG da silhueta na extensão máxima.
+#' Usada em: fct_petalas.R (grafico_petalas).
+#' @noRd
+petala_silhueta_svg <- function(i) {
+  # Montando o caminho na extensão máxima; o cinza de referência fica no CSS
+  htmltools::tags$path(
+    d = PETALAS_CAMINHO,
+    transform = transformacao_petala(ANGULOS_PETALAS[i], PETALAS_ESCALA_MAXIMA),
+    class = "silhueta-petala"
+  )
+}
+
 #' Definindo uma função que monta uma pétala individual do gráfico
 #'
 #' @param i Índice do bloco.
@@ -66,7 +105,7 @@ petala_svg <- function(i, blocos) {
   cor <- blocos$cor[i]
   angulo <- ANGULOS_PETALAS[i]
   # Escalando a pétala para a ponta percorrer a guia na escala do disco
-  escala <- (valor / 100) * (PETALAS_RAIO / PETALAS_COMPRIMENTO)
+  escala <- (valor / 100) * PETALAS_ESCALA_MAXIMA
 
   # Convertendo o ângulo do leque em radianos para posicionar os elementos
   rad <- (angulo - 90) * (pi / 180)
@@ -97,18 +136,12 @@ petala_svg <- function(i, blocos) {
     ),
     # Forma da pétala rotacionada e escalada pelo valor do bloco
     htmltools::tags$path(
-      d = sprintf(
-        "M 0 0 C -26 -40, -28 -120, 0 -%s C 28 -120, 26 -40, 0 0 Z",
-        PETALAS_COMPRIMENTO
-      ),
+      d = PETALAS_CAMINHO,
       fill = cor,
       `fill-opacity` = 0.82,
       stroke = cor,
       `stroke-width` = 1.2,
-      transform = sprintf(
-        "translate(%s, %s) rotate(%s) scale(%s)",
-        PETALAS_CX, PETALAS_CY, angulo, round(escala, 3)
-      ),
+      transform = transformacao_petala(angulo, escala),
       class = "forma-petala"
     ),
     # Círculo com o valor em uma casa decimal no topo fixo da guia
@@ -152,6 +185,11 @@ grafico_petalas <- function(blocos) {
     blocos$cor <- cor_medida(blocos$medida)
   }
 
+  # Empilhando todas as silhuetas de referência em uma camada única
+  silhuetas <- lapply(seq_len(nrow(blocos)), function(i) {
+    petala_silhueta_svg(i)
+  })
+
   # Montando cada pétala na ordem dos seis blocos do painel
   petalas <- lapply(seq_len(nrow(blocos)), function(i) {
     petala_svg(i, blocos)
@@ -188,6 +226,8 @@ grafico_petalas <- function(blocos) {
       xmlns = "http://www.w3.org/2000/svg",
       `role` = "img",
       `aria-label` = "Leque com os seis blocos do IBISMA",
+      # Desenhando a camada de referência antes das pétalas para ficar por baixo
+      htmltools::tags$g(class = "camada-silhuetas", silhuetas),
       centro,
       petalas
     ),
