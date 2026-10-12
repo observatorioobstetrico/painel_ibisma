@@ -148,6 +148,8 @@ mapa_base <- function() {
     leaflet::fitBounds(lng1 = -74, lat1 = -34, lng2 = -34, lat2 = 6) |>
     # Criando a camada que mantém os contornos das UFs acima dos municípios
     leaflet::addMapPane("ufs", zIndex = 450) |>
+    # Criando a camada que apaga as UFs fora do escopo, entre municípios e UFs
+    leaflet::addMapPane("apagado", zIndex = 445) |>
     # Criando a camada do contorno do município selecionado, acima das UFs
     leaflet::addMapPane("destaque", zIndex = 460)
 }
@@ -214,6 +216,115 @@ desenhar_ufs <- function(mapa) {
       # Desenhando no painel acima dos municípios, sem capturar o mouse
       options = leaflet::pathOptions(pane = "ufs", interactive = FALSE)
     )
+}
+
+#' Definindo uma função que calcula o retângulo de enquadramento de um escopo
+#'
+#' @param escopo Escopo escolhido no ranking ("nacional" ou a sigla de uma UF).
+#' @return Lista com lng1, lat1, lng2, lat2 do retângulo que enquadra o escopo.
+#' Usada em: fct_mapa.R (enquadrar_escopo) e testes do enquadramento.
+#' @noRd
+limites_escopo <- function(escopo) {
+  # Usando o mesmo retângulo do enquadramento inicial do Brasil no cliente
+  if (identical(escopo, "nacional")) {
+    return(list(lng1 = -74.5, lat1 = -34.5, lng2 = -33.5, lat2 = 6.5))
+  }
+
+  # Buscando a caixa envolvente da UF na malha estadual em cache
+  malha <- carregar_malha_ufs()
+  caixa <- sf::st_bbox(malha[malha$sigla_uf == escopo, ])
+  list(
+    lng1 = unname(caixa[["xmin"]]),
+    lat1 = unname(caixa[["ymin"]]),
+    lng2 = unname(caixa[["xmax"]]),
+    lat2 = unname(caixa[["ymax"]])
+  )
+}
+
+#' Definindo uma função que enquadra o mapa no escopo escolhido
+#'
+#' A câmera voa até o enquadramento com o flyToBounds nativo do leaflet, que
+#' anima qualquer combinação de deslocamento e zoom sem recriar o widget.
+#'
+#' @param session Sessão do Shiny.
+#' @param output_id Identificador do output do mapa.
+#' @param escopo "nacional" ou a sigla de uma UF.
+#' @return Nada; envia ao navegador o novo enquadramento do mapa.
+#' Usada em: fct_mapa.R (aplicar_escopo) e testes do enquadramento.
+#' @noRd
+enquadrar_escopo <- function(session, output_id, escopo) {
+  # Calculando os limites do escopo e voando até eles, mesmo em saltos curtos
+  limites <- limites_escopo(escopo)
+  leaflet::leafletProxy(output_id, session = session) |>
+    leaflet::flyToBounds(
+      lng1 = limites$lng1, lat1 = limites$lat1,
+      lng2 = limites$lng2, lat2 = limites$lat2,
+      options = list(
+        # Duração fixa de 0,8 s para o voo ser previsível em qualquer distância
+        duration = 0.8,
+        # Reservando 16 px de folga em cada lado para o enquadramento não colar
+        padding = c(32, 32)
+      )
+    )
+}
+
+#' Definindo uma função que destaca a UF escolhida no mapa
+#'
+#' O destaque é por contraste: as UFs fora do escopo recebem um véu na cor do
+#' fundo do mapa, enquanto a UF escolhida fica com as cores dos percentis
+#' intactas. O véu fica entre os municípios e os contornos das UFs, de modo
+#' que as divisas seguem legíveis como referência geográfica.
+#'
+#' @param session Sessão do Shiny.
+#' @param output_id Identificador do output do mapa.
+#' @param escopo "nacional" ou a sigla de uma UF.
+#' @return Nada; desenha ou remove o véu sobre as UFs fora do escopo.
+#' Usada em: fct_mapa.R (aplicar_escopo) e testes do destaque.
+#' @noRd
+destacar_uf <- function(session, output_id, escopo) {
+  # Removendo o véu anterior: um identificador por UF, sem depender do escopo
+  proxy <- leaflet::leafletProxy(output_id, session = session)
+  malha <- carregar_malha_ufs()
+  for (sigla in malha$sigla_uf) {
+    proxy <- leaflet::removeShape(proxy, paste0("apagado_", sigla))
+  }
+
+  # No escopo nacional o mapa fica sem destaque de UF
+  if (identical(escopo, "nacional")) {
+    return(invisible(NULL))
+  }
+
+  # Buscando as demais UFs na malha estadual em cache
+  fora <- malha[malha$sigla_uf != escopo, ]
+
+  # Cobrindo as demais UFs com um véu na cor do fundo do mapa: o leaflet
+  # guarda um identificador por camada, então cada UF leva o seu
+  leaflet::addPolygons(
+    proxy,
+    data = fora,
+    layerId = paste0("apagado_", fora$sigla_uf),
+    fill = TRUE,
+    # Mesma cor de --cor-fundo-mapa, para as demais UFs recuarem para o fundo
+    fillColor = "#EDF1F7",
+    fillOpacity = 0.5,
+    stroke = FALSE,
+    smoothFactor = 0,
+    options = leaflet::pathOptions(pane = "apagado", interactive = FALSE)
+  )
+}
+
+#' Definindo uma função que aplica um escopo ao mapa
+#'
+#' @param session Sessão do Shiny.
+#' @param output_id Identificador do output do mapa.
+#' @param escopo "nacional" ou a sigla de uma UF.
+#' @return Nada; destaca a UF e voa até o enquadramento do escopo.
+#' Usada em: mod_onde.R (mudança de escopo e fim da montagem do mapa).
+#' @noRd
+aplicar_escopo <- function(session, output_id, escopo) {
+  # Destacando primeiro, para a UF de destino já estar evidente durante o voo
+  destacar_uf(session, output_id, escopo)
+  enquadrar_escopo(session, output_id, escopo)
 }
 
 #' Definindo uma função que monta a legenda das cinco categorias do mapa

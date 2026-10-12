@@ -895,6 +895,221 @@ test_that("mapa_base limita o zoom e o arrasto ao enquadramento do Brasil", {
     character(1)
   )
   expect_true("setMaxBounds" %in% metodos)
+
+  # Os painéis mantêm a hierarquia municípios < véu < UFs < município selecionado
+  paineis <- Filter(
+    function(chamada) chamada$method == "createMapPane",
+    mapa$x$calls
+  )
+  alturas <- stats::setNames(
+    vapply(paineis, function(painel) painel$args[[2]], numeric(1)),
+    vapply(paineis, function(painel) painel$args[[1]], character(1))
+  )
+  expect_setequal(names(alturas), c("ufs", "apagado", "destaque"))
+  expect_true(alturas[["apagado"]] < alturas[["ufs"]])
+  expect_true(alturas[["ufs"]] < alturas[["destaque"]])
+})
+
+test_that("limites_escopo devolve o retângulo do Brasil ou da UF escolhida", {
+  # O escopo nacional usa o mesmo retângulo do enquadramento inicial do mapa
+  expect_equal(
+    limites_escopo("nacional"),
+    list(lng1 = -74.5, lat1 = -34.5, lng2 = -33.5, lat2 = 6.5)
+  )
+
+  # Uma UF devolve a caixa envolvente da própria malha estadual
+  malha <- carregar_malha_ufs()
+  for (sigla in c("SP", "PE", "AM", "DF")) {
+    caixa <- sf::st_bbox(malha[malha$sigla_uf == sigla, ])
+    expect_equal(
+      limites_escopo(sigla),
+      list(
+        lng1 = unname(caixa[["xmin"]]), lat1 = unname(caixa[["ymin"]]),
+        lng2 = unname(caixa[["xmax"]]), lat2 = unname(caixa[["ymax"]])
+      )
+    )
+  }
+
+  # Todas as siglas do seletor cabem no quadro máximo do mapa
+  for (sigla in unique(dados_ibisma()$municipios$sigla_uf)) {
+    limites <- limites_escopo(sigla)
+    expect_true(limites$lng1 >= -75 && limites$lng2 <= -32)
+    expect_true(limites$lat1 >= -34.5 && limites$lat2 <= 6)
+    expect_true(limites$lng2 > limites$lng1 && limites$lat2 > limites$lat1)
+  }
+})
+
+test_that("enquadrar_escopo voa até o retângulo do escopo escolhido", {
+  chamada <- new.env(parent = emptyenv())
+  # Capturando o flyToBounds enviado ao proxy sem um servidor de verdade
+  testthat::local_mocked_bindings(
+    leafletProxy = function(outputId, session = NULL, ...) {
+      chamada$output <- outputId
+      chamada$sessao <- session
+      structure(list(id = outputId, session = session), class = "leaflet_proxy")
+    },
+    flyToBounds = function(map, lng1, lat1, lng2, lat2, options = list()) {
+      chamada$limites <- c(lng1 = lng1, lat1 = lat1, lng2 = lng2, lat2 = lat2)
+      chamada$options <- options
+      invisible(map)
+    },
+    .package = "leaflet"
+  )
+
+  sessao <- list(token = "teste")
+  enquadrar_escopo(sessao, "onde-mapa", "SP")
+
+  # O proxy é criado para o mapa do módulo e recebe a caixa envolvente de SP
+  expect_equal(chamada$output, "onde-mapa")
+  expect_identical(chamada$sessao, sessao)
+  limites <- limites_escopo("SP")
+  expect_equal(
+    chamada$limites,
+    c(
+      lng1 = limites$lng1, lat1 = limites$lat1,
+      lng2 = limites$lng2, lat2 = limites$lat2
+    )
+  )
+  # O voo usa uma duração fixa e a folga de 16 px de cada lado
+  expect_equal(chamada$options, list(duration = 0.8, padding = c(32, 32)))
+
+  # O escopo nacional restaura o retângulo usado na abertura do painel
+  enquadrar_escopo(sessao, "onde-mapa", "nacional")
+  expect_equal(
+    chamada$limites,
+    c(lng1 = -74.5, lat1 = -34.5, lng2 = -33.5, lat2 = 6.5)
+  )
+})
+
+test_that("destacar_uf cobre as UFs fora do escopo e limpa no nacional", {
+  chamadas <- new.env(parent = emptyenv())
+  chamadas$registros <- list()
+  registrar <- function(registro) {
+    chamadas$registros[[length(chamadas$registros) + 1]] <- registro
+  }
+
+  # Capturando o que o proxy envia sem um servidor de verdade
+  testthat::local_mocked_bindings(
+    leafletProxy = function(outputId, session = NULL, ...) {
+      structure(list(id = outputId, session = session), class = "leaflet_proxy")
+    },
+    removeShape = function(map, layerId) {
+      registrar(list(acao = "remove", layerId = layerId))
+      map
+    },
+    addPolygons = function(map, data, layerId, ...) {
+      registrar(list(
+        acao = "add", layerId = layerId, data = data, extras = list(...)
+      ))
+      map
+    },
+    .package = "leaflet"
+  )
+
+  # No escopo escolhido, o véu anterior sai de todas as UFs e entra de novo
+  destacar_uf(NULL, "onde-mapa", "SP")
+  malha <- carregar_malha_ufs()
+  acoes <- vapply(chamadas$registros, function(r) r$acao, character(1))
+  expect_equal(sum(acoes == "remove"), nrow(malha))
+  expect_equal(
+    vapply(
+      chamadas$registros[acoes == "remove"],
+      function(r) r$layerId,
+      character(1)
+    ),
+    paste0("apagado_", malha$sigla_uf)
+  )
+  expect_equal(which(acoes == "add"), nrow(malha) + 1)
+
+  veu <- chamadas$registros[[nrow(malha) + 1]]
+  # O véu cobre as 26 UFs restantes, deixando a escolhida de fora
+  expect_equal(nrow(veu$data), 26)
+  expect_false("SP" %in% veu$data$sigla_uf)
+  expect_true("PE" %in% veu$data$sigla_uf)
+  # Cada UF tem o próprio identificador, na ordem da malha
+  expect_equal(veu$layerId, paste0("apagado_", veu$data$sigla_uf))
+  # É só preenchimento na cor do fundo do mapa, sem contorno nem mouse
+  expect_true(veu$extras$fill)
+  expect_equal(veu$extras$fillColor, "#EDF1F7")
+  expect_equal(veu$extras$fillOpacity, 0.5)
+  expect_false(veu$extras$stroke)
+  expect_equal(veu$extras$options$pane, "apagado")
+  expect_false(veu$extras$options$interactive)
+
+  # No escopo nacional sobram apenas as remoções do véu anterior
+  chamadas$registros <- list()
+  destacar_uf(NULL, "onde-mapa", "nacional")
+  expect_equal(
+    vapply(chamadas$registros, function(r) r$acao, character(1)),
+    rep("remove", nrow(malha))
+  )
+})
+
+test_that("aplicar_escopo destaca a UF antes de voar até ela", {
+  registros <- new.env(parent = emptyenv())
+  registros$ordem <- character(0)
+  # Anotando a sequência das duas etapas sem tocar no leaflet
+  testthat::local_mocked_bindings(
+    destacar_uf = function(session, output_id, escopo) {
+      registros$ordem <- c(registros$ordem, paste0("destaque:", escopo))
+      invisible(NULL)
+    },
+    enquadrar_escopo = function(session, output_id, escopo) {
+      registros$ordem <- c(registros$ordem, paste0("voo:", escopo))
+      invisible(NULL)
+    }
+  )
+
+  aplicar_escopo(NULL, "onde-mapa", "AM")
+  expect_equal(registros$ordem, c("destaque:AM", "voo:AM"))
+})
+
+test_that("o escopo do ranking aplica o destaque e o voo conforme a escolha", {
+  dados <- dados_ibisma()
+  municipio <- shiny::reactiveVal(municipio_padrao(dados))
+  chamadas <- new.env(parent = emptyenv())
+  chamadas$escopos <- character(0)
+
+  # Capturando os escopos aplicados pelo módulo sem tocar no leaflet
+  testthat::local_mocked_bindings(
+    aplicar_escopo = function(session, output_id, escopo) {
+      chamadas$escopos <- c(chamadas$escopos, escopo)
+      chamadas$output_id <- output_id
+      invisible(NULL)
+    }
+  )
+
+  shiny::testServer(
+    mod_onde_server,
+    args = list(dados = dados, municipio = municipio),
+    {
+      session$setInputs(ano = "2024", medida = "indice_final", escopo = "nacional")
+      session$flushReact()
+      # O escopo nacional inicial não pede nada: o mapa abre no Brasil sem destaque
+      expect_length(chamadas$escopos, 0)
+
+      # Antes de o mapa ficar pronto, trocar o escopo ainda não aplica nada
+      session$setInputs(escopo = "SP")
+      session$flushReact()
+      expect_length(chamadas$escopos, 0)
+
+      # Quando o mapa termina de montar, a UF já escolhida é aplicada
+      session$setInputs(mapa_pronto = 1)
+      session$flushReact()
+      expect_equal(chamadas$escopos, "SP")
+      expect_equal(chamadas$output_id, session$ns("mapa"))
+
+      # Trocando de UF, o mapa acompanha a nova escolha
+      session$setInputs(escopo = "AM")
+      session$flushReact()
+      expect_equal(chamadas$escopos, c("SP", "AM"))
+
+      # Voltando ao nacional, o destaque sai e o mapa volta ao Brasil
+      session$setInputs(escopo = "nacional")
+      session$flushReact()
+      expect_equal(chamadas$escopos, c("SP", "AM", "nacional"))
+    }
+  )
 })
 
 test_that("legenda_categorias omite Sem dados por padrão", {
@@ -986,11 +1201,54 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
 
   # A ponta da pétala percorre a guia na mesma escala do disco
   escalas <- as.numeric(sub(
-    ".*scale\\(([0-9.]+)\\)", "\\1",
-    regmatches(html, gregexpr("scale\\([0-9.]+\\)", html))[[1]]
+    ".*scale\\(([0-9.]+)\\).*", "\\1",
+    regmatches(html, gregexpr('scale\\([0-9.]+\\)" class="forma-petala"', html))[[1]]
   ))
   esperadas <- round((blocos$valor / 100) * (185 / 170), 3)
   expect_equal(round(escalas, 3), esperadas)
+
+  # A silhueta de referência marca a extensão máxima em toda pétala
+  silhuetas <- regmatches(
+    html,
+    gregexpr('scale\\([0-9.]+\\)" class="silhueta-petala"', html)
+  )[[1]]
+  expect_length(silhuetas, 6)
+  escalas_silhueta <- as.numeric(sub(
+    ".*scale\\(([0-9.]+)\\).*", "\\1", silhuetas
+  ))
+  expect_equal(round(escalas_silhueta, 3), rep(round(185 / 170, 3), 6))
+
+  # Todas as silhuetas ficam em uma camada única desenhada abaixo das pétalas
+  expect_equal(
+    lengths(regmatches(html, gregexpr('class="camada-silhuetas"', html, fixed = TRUE))),
+    1
+  )
+  expect_true(
+    max(gregexpr('class="silhueta-petala"', html, fixed = TRUE)[[1]]) <
+      min(gregexpr('class="grupo-petala"', html, fixed = TRUE)[[1]])
+  )
+})
+
+test_that("a silhueta de referência permanece visível com valor zerado", {
+  blocos <- data.frame(
+    nome = BLOCOS$nome,
+    valor = rep(0, 6),
+    categoria = rep("Muito baixo", 6),
+    cor = BLOCOS$cor,
+    pos_nac = 1:6,
+    total_nac = rep(100, 6),
+    stringsAsFactors = FALSE
+  )
+  html <- as.character(grafico_petalas(blocos))
+  # A pétala real desaparece na escala zero, mas a silhueta segue no máximo
+  expect_equal(
+    lengths(regmatches(html, gregexpr('scale\\(0\\)" class="forma-petala"', html))),
+    6
+  )
+  expect_equal(
+    lengths(regmatches(html, gregexpr('scale\\(1.088\\)" class="silhueta-petala"', html))),
+    6
+  )
 })
 
 test_that("perfil_palco monta identificação, pétalas e placar", {

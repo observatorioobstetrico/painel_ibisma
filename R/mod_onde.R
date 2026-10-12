@@ -186,7 +186,17 @@ mod_onde_server <- function(id, dados, municipio) {
     # Enviando o desenho dos municípios assim que o mapa termina de montar
     shiny::observeEvent(input$mapa_pronto, {
       enviar_desenho_municipios(session, ns("mapa"), base_mapa(), input$medida)
+      # Aplicando a UF escolhida antes de o mapa terminar de montar
+      if (!identical(input$escopo, "nacional")) {
+        aplicar_escopo(session, ns("mapa"), input$escopo)
+      }
     }, once = TRUE)
+
+    # Acompanhando o escopo do ranking com o destaque e o voo do mapa
+    shiny::observeEvent(input$escopo, {
+      shiny::req(input$mapa_pronto)
+      aplicar_escopo(session, ns("mapa"), input$escopo)
+    }, ignoreInit = TRUE)
 
     # Destacando no mapa o município selecionado em qualquer parte do painel
     shiny::observe({
