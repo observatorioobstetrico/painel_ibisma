@@ -2656,3 +2656,76 @@ sessão, repetidas para cada usuário.
 
 - `dd2aa49` Faz o mapa acompanhar o escopo do ranking
 
+---
+
+# Sessão 33 — Silhuetas de referência nas pétalas (12/10/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** melhorar a leitura do gráfico de pétalas em municípios com
+  valores baixos, mostrando a extensão máxima que cada pétala pode atingir
+  (pedido surgido em reunião). As pétalas reais continuam sendo o elemento
+  principal do gráfico.
+
+## 1. Silhueta na extensão máxima
+
+- `R/fct_petalas.R` ganhou a constante `PETALAS_CAMINHO` (o `d` do caminho,
+  antes repetido no `sprintf` da pétala), a constante `PETALAS_ESCALA_MAXIMA`
+  (`raio / comprimento`, a escala que a pétala atinge em 100) e a função
+  `petala_silhueta_svg()`, que monta o caminho na extensão máxima.
+- A silhueta permanece visível com valor baixo ou zero (a pétala real some na
+  escala 0; a silhueta, não) e sua dimensão é sempre a máxima, igual em
+  qualquer município — a referência não depende do maior valor observado.
+- Valores, escala, geometria das pétalas reais, discos de valor, guias e
+  legenda não mudaram.
+
+## 2. Camada única abaixo das pétalas
+
+- A primeira versão desenhava a silhueta dentro do grupo de cada pétala, e as
+  silhuetas dos blocos seguintes ficavam por cima das pétalas anteriores (véu
+  e tracejado cruzando as formas reais). A pedido, o SVG foi reorganizado em
+  camadas: `<g class="camada-silhuetas">` com as seis silhuetas, depois o
+  disco central e, por fim, os seis `grupo-petala`.
+- `transformacao_petala()` passou a montar o `translate/rotate/scale` usado
+  pelas duas formas, evitando repetir a formatação.
+
+## 3. Cinza claro (decisão visual)
+
+- A versão colorida (preenchimento na cor da dimensão a 10% e contorno
+  tracejado a 45%) foi implementada e comparada com um cinza neutro; a
+  preferência final foi pelo **cinza claro**, que deixa as pétalas coloridas
+  em destaque e não compete com as cores das dimensões.
+- A pintura saiu do R e ficou no CSS: `--cor-silhueta` (o primeiro valor,
+  `#ECEEF2`, foi clareado a pedido para `#F1F3F7`) e `--cor-silhueta-traco:
+  #D8DCE3`, com tracejado `2,3` de 1 px.
+- `.silhueta-petala` mantém `pointer-events: none`: a referência é só visual —
+  hover, tooltip e foco de teclado continuam na pétala real e no disco.
+
+## 4. Testes e validação
+
+- `devtools::test()`: **515 asserções verdes** (suíte com `rlang` 1.3.0 de
+  biblioteca temporária, como nas sessões anteriores). Os testes das pétalas
+  ganharam a checagem das seis silhuetas em `scale(1.088)`, a ordem da camada
+  antes dos grupos e o caso de valor zerado (pétala em escala 0 e silhueta no
+  máximo).
+- Smoke headless (1600×950 e 390×844): Iomerê/SC (blocos ≤ 7,3) com as seis
+  silhuetas visíveis; Lafaiete Coutinho/BA (0,0 e 95,4) com a pétala zerada
+  representada só pela referência; Careiro da Várzea/AM (até 100,0) com as
+  silhuetas aparecendo apenas nas sobras das pétalas; comparação
+  Iomerê × Careiro com a referência idêntica nos dois palcos; hover real no
+  disco abrindo a tooltip ("Pré-natal 2,0") e hover na área só da silhueta sem
+  tooltip (`elementFromPoint` = SVG, confirmando o `pointer-events: none`);
+  mobile sem estouro horizontal; nenhum erro de JavaScript.
+- Evidências em temporários fora do git (`smoke_petalas/`).
+
+## 5. Limitações
+
+- O esqueleto de carregamento (`esqueleto_petalas`) não recebeu as silhuetas:
+  ele segue um placeholder neutro e sem dado, então no primeiro carregamento o
+  leque aparece sem as referências por um instante.
+- Os tons da silhueta ficam em duas variáveis no `custom.css`, fáceis de
+  ajustar (clarear, escurecer ou voltar às cores por dimensão).
+
+## 6. Commits da sessão
+
+- `06cdf7c` Adiciona as silhuetas de referência às pétalas
+
