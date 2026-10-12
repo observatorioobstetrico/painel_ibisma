@@ -2572,3 +2572,87 @@ sessão, repetidas para cada usuário.
 
 - `9ffe4c5` Corrige o borrao do canvas do mapa em escalas fracionarias
 
+---
+
+# Sessão 32 — Mapa acompanhando o escopo do ranking (12/10/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** fazer o mapa da seção Onde? acompanhar o seletor de escopo —
+  enquadrando a UF escolhida com uma transição animada e destacando-a
+  visualmente —, sem recriar o mapa e sem tocar nas cores dos percentis.
+  O destaque e a duração do voo foram refeitos após revisão de uso.
+
+## 1. Enquadramento por escopo
+
+- Novo `limites_escopo()` (`R/fct_mapa.R`): no nacional devolve o mesmo
+  retângulo do enquadramento inicial do cliente e, em uma UF, a caixa
+  envolvente da malha estadual em cache. O PE inclui Fernando de Noronha, que
+  tem código próprio na base e entra no ranking do estado.
+- `enquadrar_escopo()` move a câmera pelo proxy do leaflet, sem recriar o
+  widget; `aplicar_escopo()` concentra destaque + voo.
+- Em `mod_onde.R`, o escopo é aplicado na troca do seletor e, se a escolha
+  acontecer antes de o mapa montar, no primeiro `mapa_pronto`.
+- O mapa é o mesmo durante tudo: o contêiner e a instância do leaflet marcados
+  no smoke continuam os mesmos depois das trocas (`MAPA_PRESERVADO true`).
+
+## 2. Voo animado
+
+- **Causa do salto brusco:** o `fitBounds` do leaflet vira `setView`, que só
+  anima pan que caiba na viewport e anima zoom quando a diferença é de até 4
+  níveis; entre UFs distantes com o mesmo zoom, a troca era instantânea.
+- **Solução:** `flyToBounds` nativo (centro e zoom interpolados), com duração
+  fixa de 1,2 s e folga de 16 px por lado. Na revisão de uso a duração foi
+  reduzida para **0,8 s** ("a animação está durando muito tempo").
+- **Interrupções:** o `flyTo` cancela o voo anterior e parte da posição atual;
+  trocas sucessivas são contínuas e a última seleção sempre vence.
+- Descartada uma passagem por `deferUntilFlush = FALSE`: o voo começava antes,
+  mas travava ~0,6 s no meio, enquanto a tabela e o perfil re-renderizavam.
+
+## 3. Destaque da UF escolhida
+
+- A primeira abordagem (contorno com halo branco e linha azul escura) foi
+  rejeitada na revisão de uso.
+- **Solução final, por contraste:** um véu translúcido na cor do fundo do mapa
+  (`#EDF1F7`, opacidade 0,5) cobre as UFs fora do escopo, e a UF escolhida
+  permanece com as cores dos percentis intactas. O véu fica no painel
+  `apagado` (zIndex 445), entre os municípios e os contornos das UFs, sem
+  contorno próprio e sem capturar o mouse; no nacional é removido por completo.
+- **Achado:** um mesmo `layerId` para 26 feições em `addPolygons` não funciona
+  — o gerenciador do leaflet registra uma camada por id e remove as anteriores,
+  de modo que o véu acabava cobrindo apenas o último estado. Solução: um
+  identificador por UF (`apagado_<sigla>`), com os 27 ids removidos a cada
+  troca e os 26 restantes readicionados em uma única chamada.
+- As cores dos dados não são tocadas: o histograma de preenchimentos dos
+  municípios é idêntico antes e depois do véu.
+
+## 4. Testes e validação
+
+- `devtools::test()`: **515 asserções verdes** (suíte com `rlang` 1.3.0 de
+  biblioteca temporária, como nas sessões anteriores).
+- Smoke headless com medições no app: `moveend` do voo em 819 ms com a duração
+  de 0,8 s; RJ→PB (mesmo zoom) com 49–50 posições intermediárias amostradas;
+  PB→DF (zoom 7→9) correto; AM interrompido por SP termina exatamente em SP; o
+  véu tem 26 caminhos no painel e 0 no nacional; contra a captura sem destaque,
+  ~61% dos canais de cor mudam (MG 170→204; SP 197→197); hover e clique seguem
+  funcionando sobre UFs esmaecidas (Belo Horizonte); mobile 390 px com o
+  contraste correto; nenhum erro de JavaScript.
+- Evidências em temporários fora do git (`dev/smoke/zoom_escopo/`).
+
+## 5. Limitações
+
+- O início do voo depende do processamento do servidor e da re-renderização da
+  tabela e do perfil no cliente; em máquinas carregadas há atraso entre o
+  clique e o movimento (até ~1,4 s medido em cenário carregado), sem alongar a
+  animação em si. Durante o voo podem ocorrer 1–2 travadas de quadro pelo mesmo
+  motivo.
+- O véu clareia as cores das UFs fora do escopo (percepção), por decisão de
+  contraste; a UF escolhida e os tooltips seguem com as cores exatas.
+- A duração do voo (0,8 s) e a opacidade do véu (0,5) ficam em pontos únicos
+  em `R/fct_mapa.R`, fáceis de ajustar.
+- O `run_app()` de desenvolvimento precisa ser reiniciado para carregar o
+  código novo (o processo carrega o pacote uma única vez).
+
+## 6. Commits da sessão
+
+- `dd2aa49` Faz o mapa acompanhar o escopo do ranking
+
