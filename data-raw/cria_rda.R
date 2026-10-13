@@ -267,6 +267,19 @@ arredondar_coordenadas <- function(geometria, casas = 4) {
   st_sfc(lapply(geometria, arredondar), crs = st_crs(geometria))
 }
 
+# Consertando a topologia da malha com o -clean do mapshaper: a versão
+# simplificada do geobr chega com as divisas duplicadas entre municípios
+# vizinhos (micro-fendas e sobreposições medidos); o -clean funde as cópias,
+# preenche as fendas e reparte as sobreposições, deixando a simplificação
+# seguinte preservar de verdade as divisas compartilhadas
+# Obs.: o rmapshaper não exporta o -clean, então a chamada usa o mesmo caminho
+# interno do ms_simplify: sf -> GeoJSON -> comandos do mapshaper -> sf
+limpar_malha <- function(malha) {
+  geojson <- rmapshaper:::sf_to_GeoJSON(malha, file = FALSE)
+  limpa <- rmapshaper::apply_mapshaper_commands(geojson, command = "-clean")
+  rmapshaper:::GeoJSON_to_sf(limpa, crs = attr(geojson, "crs"))
+}
+
 # ---------------------------------------------------------------- municípios
 
 # Baixando a malha municipal (já vem simplificada pelo geobr)
@@ -281,40 +294,54 @@ malha_municipios <- malha_municipios |>
   # Mantendo apenas as colunas necessárias para o painel
   select(codmunres, sigla_uf = abbrev_state, geometry)
 
-# Simplificando cada divisa uma única vez, sem abrir fendas entre vizinhos
+# Consertando a topologia antes de simplificar, para não sobrar fenda nenhuma
+malha_municipios <- limpar_malha(malha_municipios)
+
+# Recriando a chave como inteiro (a ida ao mapshaper devolve número decimal)
+malha_municipios <- malha_municipios |>
+  mutate(codmunres = as.integer(codmunres))
+
+# Simplificando cada divisa uma única vez, agora sobre uma malha sem fendas;
+# o keep foi calibrado para o mosaico manter o mesmo nível de detalhe de antes
 malha_municipios <- ms_simplify(
   malha_municipios,
-  keep = 0.01,
+  keep = 0.12,
   keep_shapes = TRUE
 )
 
 # Convertendo para WGS84, o sistema esperado pelo leaflet
 malha_municipios <- st_transform(malha_municipios, 4326)
 
-# Arredondando as coordenadas antes de salvar
+# ------------------------------------------------- unidades da federação
+
+# Derivando os contornos estaduais do próprio mosaico municipal, para a linha
+# da UF coincidir exatamente com a borda formada pelos municípios
+sf_use_s2(FALSE)
+malha_ufs <- suppressMessages(
+  malha_municipios |>
+    group_by(sigla_uf) |>
+    summarise(geometry = st_union(geometry), .groups = "drop")
+)
+malha_ufs <- st_set_geometry(
+  malha_ufs,
+  st_cast(st_geometry(malha_ufs), "MULTIPOLYGON")
+)
+
+# ---------------------------------------------------------------- arredondamento
+
+# Arredondando as coordenadas das duas malhas antes de salvar
 malha_municipios <- st_set_geometry(
   malha_municipios,
   arredondar_coordenadas(st_geometry(malha_municipios))
 )
-
-# Removendo geometrias vazias que possam ter surgido na simplificação
-malha_municipios <- malha_municipios[!st_is_empty(malha_municipios), ]
-
-# ------------------------------------------------- unidades da federação
-
-# Baixando e simplificando a malha estadual (contorno sobre o mapa)
-malha_ufs <- read_state(year = 2020, showProgress = FALSE)
-malha_ufs <- st_simplify(malha_ufs, dTolerance = 2000)
-malha_ufs <- st_transform(malha_ufs, 4326)
-malha_ufs <- malha_ufs |>
-  select(sigla_uf = abbrev_state, geometry)
-malha_ufs <- malha_ufs[!st_is_empty(malha_ufs), ]
-
-# Arredondando as coordenadas antes de salvar
 malha_ufs <- st_set_geometry(
   malha_ufs,
   arredondar_coordenadas(st_geometry(malha_ufs))
 )
+
+# Removendo geometrias vazias que possam ter surgido na simplificação
+malha_municipios <- malha_municipios[!st_is_empty(malha_municipios), ]
+malha_ufs <- malha_ufs[!st_is_empty(malha_ufs), ]
 
 # ---------------------------------------------------------------- conferências
 
