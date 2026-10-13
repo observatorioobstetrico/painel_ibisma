@@ -25,7 +25,7 @@ carregar_malha_municipios <- function() {
 #' Definindo uma função que carrega a malha estadual simplificada
 #'
 #' @return Objeto sf com os polígonos das unidades da federação.
-#' Usada em: fct_mapa.R (desenhar_ufs).
+#' Usada em: fct_mapa.R (desenhar_ufs, limites_escopo e destacar_uf).
 #' @noRd
 carregar_malha_ufs <- function() {
   # Lendo o arquivo apenas na primeira chamada e reutilizando depois
@@ -232,7 +232,15 @@ limites_escopo <- function(escopo) {
 
   # Buscando a caixa envolvente da UF na malha estadual em cache
   malha <- carregar_malha_ufs()
-  caixa <- sf::st_bbox(malha[malha$sigla_uf == escopo, ])
+  estado <- malha[malha$sigla_uf == escopo, ]
+
+  # Descartando as partes que ficam fora do quadro máximo do mapa (ex.: a Ilha
+  # da Trindade, no ES): elas nunca aparecem na tela e só esticariam o voo
+  partes <- sf::st_cast(sf::st_geometry(estado), "POLYGON")
+  dentro <- vapply(seq_along(partes), function(i) {
+    sf::st_bbox(partes[i])[["xmin"]] <= -32
+  }, logical(1))
+  caixa <- sf::st_bbox(partes[dentro])
   list(
     lng1 = unname(caixa[["xmin"]]),
     lat1 = unname(caixa[["ymin"]]),
