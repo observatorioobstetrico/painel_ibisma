@@ -2729,3 +2729,92 @@ sessão, repetidas para cada usuário.
 
 - `06cdf7c` Adiciona as silhuetas de referência às pétalas
 
+---
+
+# Sessão 34 — Fendas da malha e contornos de UF derivados do mosaico (13/10/2026)
+
+- **Pacote:** `painel_ibisma`.
+- **Objetivo:** eliminar os espaços em branco entre municípios no zoom
+  aproximado do mapa e fazer a linha de contorno da UF bater com a borda
+  formada pelos municípios, corrigindo a geração da malha.
+
+## 1. Diagnóstico (medido nas malhas)
+
+- **Fendas:** a malha municipal do ETL vem da versão **simplificada** do
+  geobr, que já chega com as divisas duplicadas entre vizinhos: 70.191
+  micro-fendas (largura mediana de 16 m, máxima de 111 m) e 1.086 km² de
+  sobreposições. A malha completa do geobr, medida como referência, tem
+  0 fendas e 0 sobreposições.
+- O `ms_simplify(keep = 0.01)` seguinte preserva divisas compartilhadas só
+  quando os dois lados carregam exatamente os mesmos vértices; com a entrada
+  quebrada, cada lado era simplificado por conta própria e as micro-fendas
+  viravam fendas visíveis: **8.264 fendas, mediana de 115 m, p90 de 462 m,
+  até 2,5 km** (cerca de 8.100 km²). O arredondamento de 4 casas deixava
+  ainda 3 polígonos inválidos.
+- **Contorno de UF:** `malha_ufs` vinha de uma malha independente
+  (`read_state` + `st_simplify(dTolerance = 2000)`), enquanto a borda do
+  mosaico é a união dos municípios simplificados por `ms_simplify`. Medição
+  do desencontro: 67.630 km² de diferença simétrica e distância mediana de
+  **441 m** entre as duas linhas (RJ: mediana 918 m, p95 7,5 km). No par cru
+  do geobr, antes das nossas simplificações, a mediana era 0 m — o
+  desencontro era criado pelo próprio ETL.
+- Simplificar a malha completa do geobr (15,7 milhões de pontos) estoura a
+  memória padrão do V8 do rmapshaper (~1,4 GB), então ela ficou fora do
+  caminho da correção.
+
+## 2. Correção no ETL (`data-raw/cria_rda.R`)
+
+- Novo `limpar_malha()` aplica o `-clean` do mapshaper à malha simplificada
+  do geobr: funde as divisas duplicadas, preenche as fendas e reparte as
+  sobreposições. Como o rmapshaper não exporta o `-clean`, a chamada usa o
+  mesmo caminho interno do `ms_simplify` (sf → GeoJSON → comandos → sf).
+- O `ms_simplify` passou a rodar **uma única vez sobre a topologia
+  consertada**, com `keep = 0.12` calibrado para o mosaico manter o mesmo
+  nível de detalhe de antes (200.354 pontos contra 191.416; desenho de
+  3,44 MB contra 3,32 MB).
+- O `malha_ufs` deixou de vir do `read_state`: é derivado do próprio mosaico
+  (`st_union` por UF no motor planar do GEOS), antes do arredondamento — a
+  linha da UF passa a coincidir exatamente com a borda dos municípios.
+- Resultado medido nos arquivos salvos: **0 fendas** na união do mosaico e
+  desalinhamento UF × municípios de **0 m** nos 27 estados (menor vértice a
+  0,43 m).
+
+## 3. Enquadramento do escopo (Ilha da Trindade)
+
+- Com o conserto, a Ilha da Trindade (8,8 km², ES) — que o pipeline antigo
+  perdia na simplificação agressiva — voltou ao mosaico. Ela fica a leste do
+  quadro máximo do mapa (`maxBounds`) e só esticaria o voo do escopo do ES
+  (zoom ~5 no lugar de 7).
+- `limites_escopo()` (`R/fct_mapa.R`) passou a descartar as partes que ficam
+  fora do quadro máximo ao calcular a caixa da UF; o ES enquadra o continente
+  em zoom 7 e o PE segue incluindo Fernando de Noronha.
+
+## 4. Testes e validação
+
+- `devtools::test()`: **515 asserções verdes** (suíte com `rlang` 1.3.0 de
+  biblioteca temporária, como nas sessões anteriores).
+- Validação dos arquivos regenerados: ordem das camadas preservada
+  (`layers` igual a `as.character(codmunres)`), `codmunres` de volta a
+  inteiro, 5.570 municípios, 27 UFs e cobertura de 100% dos códigos.
+- Smoke headless: carga inicial, zoom 10 sem nenhuma cunha branca (regiões
+  SE/AL e PB), escopo ES (zoom 7,0, sem Trindade) e PE (Noronha no quadro),
+  hover com tooltip ("Porto dos Gaúchos (MT) | IBISMA 61,7 | Alto"), sem
+  erros de JavaScript ou do servidor.
+- Evidências em temporários fora do git (`smoke_antes/`, `smoke_final/`).
+
+## 5. Limitações
+
+- O arredondamento de 4 casas deixa 15 polígonos com auto-toque subpixel
+  (15 de 5.570); o app não faz operações geométricas sobre eles e o desenho
+  não muda.
+- O `limpar_malha()` depende de funções internas do rmapshaper
+  (`sf_to_GeoJSON`/`GeoJSON_to_sf`); se o pacote ganhar uma função pública
+  para o `-clean`, vale trocar a chamada.
+- Os dois pontos de ajuste ficam isolados: `keep = 0.12` no `cria_rda.R` e o
+  corte de longitude do enquadramento em `limites_escopo()`.
+
+## 6. Commits da sessão
+
+- `877951d` Evita que ilhas fora do quadro estiquem o enquadramento do escopo
+- `7f3d9d5` Corrige as fendas da malha e deriva os contornos de UF do mosaico
+
