@@ -4,8 +4,11 @@
 #   O script está em ordem de execução e imprime uma conferência a cada passo,
 #   então também dá para rodar linha por linha (Ctrl+Enter) e ir acompanhando.
 #
+#   Antes de rodar, gere os CSVs da pipeline de indicadores, em
+#   data-raw/scripts_bruno: cria_banco_dados_2024.R e depois criar_indice_final.R.
+#
 #   Etapas:
-#     1. Base bruta (a partir dos CSVs de data-raw/databases)
+#     1. Base bruta: índice, blocos e indicadores (CSVs de data-raw/databases)
 #     2. Constantes do índice (lidas de R/constantes.R)
 #     3. Base longa (memória)
 #     4. Tabelas por ano (inst/app/data/tabela_ano_*.rds)
@@ -20,10 +23,34 @@ library(tidyr)
 #   1. BASE BRUTA
 # =============================================================================
 
-# Lendo os valores do índice e dos seis blocos, de 2015 a 2024
-df_ibisma <- read.csv("data-raw/databases/base_exemplo_ibisma.csv")
-print(head(df_ibisma))
-cat("Linhas lidas:", nrow(df_ibisma), "\n")
+# Lendo o índice e os seis blocos, em percentis, de 2015 a 2024
+df_indice <- read.csv("data-raw/databases/indice_materno_final_2015_2024.csv")
+print(head(df_indice))
+cat("Linhas lidas:", nrow(df_indice), "\n")
+
+# Lendo os indicadores brutos que compõem os blocos, exceto o de hemoterapia
+df_indicadores <- read.csv("data-raw/databases/banco_dados_atualizado_2024_abril.csv") |>
+  select(
+    ano, codmunres,
+    idhm, ESC_11, DEP_SUS, NASC_RACA, tx_homicidio_100mil,
+    FEC_20, PRE_NATAL, DIST_RES, NASC_CES, cob_hosp_parto,
+    prop_menor_1500, desp_total_hab_corrigido,
+    tx_leitos_hospitalares_totais, tx_leitos_uti_total, mean_UTCI_C
+  )
+
+# Lendo o indicador bruto de hemoterapia, que entra no bloco Sistema de saúde
+df_hemo <- read.csv("data-raw/databases/dados_servicos_hemo.csv") |>
+  select(ano, codmunres, leitos_obst_med_transfusional = indicador5)
+
+# Juntando o índice, os indicadores e a hemoterapia por município e ano
+df_ibisma <- df_indice |>
+  transmute(
+    ano, codmunres,
+    indice_final = indice_mf_v1,
+    bloco1, bloco2, bloco3, bloco4, bloco5, bloco6
+  ) |>
+  left_join(df_indicadores, by = c("ano", "codmunres")) |>
+  left_join(df_hemo, by = c("ano", "codmunres"))
 
 # Conferindo se existem duplicatas e removendo
 print(janitor::get_dupes(df_ibisma))
@@ -101,15 +128,26 @@ usar <- function(nome) {
 }
 usar("MEDIDAS")
 usar("CATEGORIAS")
+usar("INDICADORES")
 
 # Nomes das colunas que viram medidas no formato longo
 medidas <- MEDIDAS$medida
+
+# Nomes das colunas dos indicadores brutos que compõem os blocos
+indicadores <- INDICADORES$indicador
 
 # Rótulos das cinco categorias, do menos para o mais vulnerável
 categorias <- CATEGORIAS
 
 # Percentis que cortam as cinco categorias (específicos da geração dos dados)
 cortes_percentis <- c(0.2, 0.4, 0.6, 0.8)
+
+# Ampliando os indicadores guardados como proporção (fator 100 = %)
+fatores <- stats::setNames(INDICADORES$fator, INDICADORES$indicador)
+df_ibisma <- df_ibisma |>
+  mutate(across(all_of(indicadores), ~ .x * fatores[[cur_column()]])) |>
+  # Convertendo resultados indefinidos das divisões em valores ausentes
+  mutate(across(all_of(indicadores), ~ replace(.x, is.nan(.x), NA)))
 
 # =============================================================================
 #   3. BASE LONGA
@@ -206,19 +244,28 @@ municipios <- df_ibisma |>
 # Lista dos anos disponíveis
 anos <- sort(unique(df_ibisma$ano))
 
-# Montando as séries: uma linha por município e ano, uma coluna por medida
+# Montando as séries: uma linha por município e ano, com medidas e indicadores
 series <- ibisma_longo |>
   select(ano, codmunres, medida, valor) |>
   pivot_wider(names_from = medida, values_from = valor) |>
+  # Acrescentando os indicadores brutos que compõem os blocos
+  left_join(
+    select(df_ibisma, ano, codmunres, all_of(indicadores)),
+    by = c("ano", "codmunres")
+  ) |>
   # Preenchendo os anos que faltam em cada município (Borá não tem 2023)
   group_by(codmunres) |>
   complete(ano = anos) |>
   ungroup() |>
   arrange(codmunres, ano) |>
-  select(codmunres, ano, all_of(medidas))
+  select(codmunres, ano, all_of(medidas), all_of(indicadores))
 
 # Conferindo: os anos sem dado aparecem com NA (Borá em 2023)
 print(filter(series, is.na(indice_final)))
+
+# Conferindo a cobertura de cada indicador nas séries montadas
+cobertura <- vapply(series[indicadores], function(x) mean(!is.na(x)), numeric(1))
+print(round(100 * cobertura, 1))
 
 # Salvando o cadastro, os anos e as séries em um arquivo único
 saveRDS(
@@ -240,7 +287,8 @@ cat(
 cat(
   "Séries:", nrow(series), "linhas |",
   nrow(municipios), "municípios |",
-  length(anos), "anos\n"
+  length(anos), "anos |",
+  length(indicadores), "indicadores\n"
 )
 
 # =============================================================================

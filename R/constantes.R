@@ -125,6 +125,122 @@ BLOCOS <- MEDIDAS[MEDIDAS$medida != "indice_final", ]
 row.names(BLOCOS) <- NULL
 
 # -----------------------------------------------------------------------------
+#   DICIONÁRIO DOS INDICADORES
+# -----------------------------------------------------------------------------
+
+# Definindo os dezesseis indicadores brutos que compõem os seis blocos
+# A coluna indicador é o nome da coluna nas séries históricas do painel;
+# a coluna codigo é o código usado no cálculo do índice (criar_indice_final.R);
+# a coluna nome é o nome oficial do indicador, exibido no título do cartão;
+# a coluna decimais é o número de casas dos valores no tooltip (3 no IDHM);
+# a coluna fator amplia os indicadores guardados como proporção (×100 = %);
+# a coluna protetor indica os indicadores em que o aumento reduz a insegurança.
+## Usada em: data-raw/cria_rda.R (montagem das séries), fct_dados.R (consultas do dicionário)
+## e fct_graficos_evolucao.R (título, unidade e escala dos gráficos).
+INDICADORES <- data.frame(
+  indicador = c(
+    "idhm",
+    "ESC_11",
+    "DEP_SUS",
+    "NASC_RACA",
+    "tx_homicidio_100mil",
+    "FEC_20",
+    "PRE_NATAL",
+    "DIST_RES",
+    "NASC_CES",
+    "cob_hosp_parto",
+    "prop_menor_1500",
+    "desp_total_hab_corrigido",
+    "tx_leitos_hospitalares_totais",
+    "tx_leitos_uti_total",
+    "leitos_obst_med_transfusional",
+    "mean_UTCI_C"
+  ),
+  codigo = c(
+    "B1_1",
+    "B1_2",
+    "B1_3",
+    "B1_4",
+    "B1_5",
+    "B2",
+    "B3",
+    "B4_1",
+    "B4_2",
+    "B4_3",
+    "B5_1",
+    "B5_2",
+    "B5_3",
+    "B5_4",
+    "B5_5_5",
+    "B6"
+  ),
+  bloco = c(
+    "bloco1", "bloco1", "bloco1", "bloco1", "bloco1",
+    "bloco2",
+    "bloco3",
+    "bloco4", "bloco4", "bloco4",
+    "bloco5", "bloco5", "bloco5", "bloco5", "bloco5",
+    "bloco6"
+  ),
+  nome = c(
+    "IDHM",
+    "Porcentagem de nascidos vivos de mães com mais de 11 anos de estudo",
+    "Porcentagem de mulheres com 10 a 49 anos usuárias exclusivas do SUS",
+    "Porcentagem de nascidos vivos de mães de raça/cor negras (pretas + pardas) + indígenas",
+    "Taxa de homicídio por 100.000 habitantes",
+    "Taxa específica de fecundidade de mulheres com menos de 20 anos de idade (por mil)",
+    "Porcentagem de mulheres com início do pré-natal no primeiro trimestre gestacional e número adequado de consultas para a idade gestacional no parto",
+    "Medianas de deslocamento para partos ocorridos fora do município de residência da mulher",
+    "Porcentagem de nascidos vivos por cesariana",
+    "Porcentagem de partos ocorridos em hospitais",
+    "Porcentagem de nascidos com peso <1500g em serviços com UTI neonatal",
+    "Despesa total municipal com saúde, per capita, corrigido pelo IPCA de dez. 2024",
+    "Taxa de leitos hospitalares por 10.000 habitantes na macrorregião de saúde",
+    "Taxa de leito de UTI por 10.000 habitantes na macrorregião de saúde",
+    "Porcentagem de leitos obstétricos em hospitais com serviço de medicina transfusional",
+    "Média anual do Índice Climático Térmico Universal (°C)"
+  ),
+  unidade = c(
+    "índice",
+    "%", "%", "%", "por 100 mil hab.",
+    "por mil mulheres de 10 a 19 anos",
+    "%",
+    "km",
+    "%", "%", "%",
+    "R$/hab.",
+    "por 10 mil hab.", "por 10 mil hab.",
+    "%",
+    "°C"
+  ),
+  decimais = c(3, rep(1, 15)),
+  fator = c(
+    1,
+    1, 1, 1, 1,
+    1,
+    1,
+    1, 1, 100,
+    100,
+    1,
+    1, 1,
+    100,
+    1
+  ),
+  protetor = c(
+    TRUE,
+    TRUE, FALSE, FALSE, FALSE,
+    FALSE,
+    TRUE,
+    FALSE, TRUE, TRUE,
+    TRUE,
+    TRUE,
+    TRUE, TRUE,
+    TRUE,
+    FALSE
+  ),
+  stringsAsFactors = FALSE
+)
+
+# -----------------------------------------------------------------------------
 #   NÍVEIS DE ANÁLISE GEOGRÁFICA
 # -----------------------------------------------------------------------------
 
