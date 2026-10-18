@@ -15,14 +15,23 @@ CSS_TOOLTIP <- paste0(
 )
 
 # Definindo as alturas dos gráficos de evolução do índice e dos blocos
-ALTURA_GRAFICO_IBISMA <- 270L
-ALTURA_GRAFICO_BLOCO <- 160L
+ALTURA_GRAFICO_IBISMA <- 240L
+ALTURA_GRAFICO_BLOCO <- 170L
+
+# Definindo a altura dos gráficos de evolução dos indicadores
+ALTURA_GRAFICO_INDICADOR <- 160L
 
 # Definindo a largura mínima para manter os rótulos de ano na horizontal
 LARGURA_ROTULOS_ANOS <- 340L
 
-# Definindo o passo dos ticks e das linhas de grade do eixo Y
+# Definindo o passo dos ticks e das linhas de grade do eixo Y das medidas
 PASSO_EIXO_Y <- 25
+
+# Definindo os passos redondos usados nos eixos dos indicadores
+PASSOS_EIXO <- c(1, 1.5, 2, 2.5, 5, 10)
+
+# Definindo o número de intervalos (e de ticks) dos eixos dos indicadores
+INTERVALOS_EIXO <- 5
 
 #' Definindo uma função que aplica o tooltip padrão do IBISMA a um gráfico echarts4r
 #'
@@ -145,13 +154,9 @@ rotulos_anos_js <- function() {
 grafico_evolucao <- function(series, medida, nome = NULL,
                              comparacao = NULL, nome_comparacao = NULL,
                              minimo_y = NULL, maximo_y = NULL) {
-  # Identificando a cor e o destaque da medida desenhada
-  cor <- cor_medida(medida)
+  # Identificando a cor do traço e o destaque da medida desenhada
+  cor <- cor_linha_medida(medida)
   eh_indice <- identical(medida, "indice_final")
-  # Escurecendo o traço do Social, cujo amarelo some em linha fina sobre o branco
-  if (identical(medida, "bloco1")) {
-    cor <- COR_LINHA_SOCIAL
-  }
 
   # Calculando o piso do eixo quando o módulo não impõe um valor compartilhado
   if (is.null(minimo_y)) {
@@ -173,7 +178,7 @@ grafico_evolucao <- function(series, medida, nome = NULL,
   }
 
   # Reservando ao IBISMA a linha mais espessa e o símbolo maior
-  largura <- if (eh_indice) 3 else 2
+  largura <- if (eh_indice) 2.5 else 2
   # Usando o mesmo tamanho de bolinha nas duas séries, a meio caminho do desenho
   tamanho <- if (eh_indice) 7 else 5.5
 
@@ -274,16 +279,236 @@ grafico_evolucao <- function(series, medida, nome = NULL,
   htmlwidgets::onRender(grafico, rotulos_anos_js())
 }
 
+#' Definindo uma função que lista os passos redondos candidatos para um eixo
+#'
+#' @param faixa Diferença entre o maior e o menor valor exibidos.
+#' @param minimo Menor passo aceito, igual à precisão do indicador.
+#' @return Vetor crescente de passos redondos que cobrem a faixa.
+#' Usada em: fct_graficos_evolucao.R (limites_indicador).
+#' @noRd
+passos_do_eixo <- function(faixa, minimo = 0) {
+  # Partindo de cinco intervalos e montando a escada de passos redondos
+  bruto <- max(faixa / INTERVALOS_EIXO, minimo, 1e-9)
+  expoente <- floor(log10(bruto))
+  passos <- as.vector(outer(PASSOS_EIXO, 10^(expoente + -1:3), "*"))
+  sort(unique(passos[passos >= bruto * (1 - 1e-9)]))
+}
+
+#' Definindo uma função que conta as casas decimais de um passo redondo
+#'
+#' @param passo Passo do eixo, vindo de passos_do_eixo().
+#' @return Número de casas decimais necessárias para exibir o passo.
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao_indicador).
+#' @noRd
+casas_do_passo <- function(passo) {
+  # Decompondo o passo em mantissa e potência de dez
+  expoente <- floor(log10(passo))
+  mantissa <- passo / 10^expoente
+  # Passos com meio (1,5 e 2,5) pedem uma casa a mais que os passos inteiros
+  if (abs(mantissa - round(mantissa)) > 1e-9) {
+    return(max(0, 1 - expoente))
+  }
+  max(0, -expoente)
+}
+
+#' Definindo uma função que calcula a faixa e o passo do eixo de um indicador
+#'
+#' @param series Data frame retornado por series_municipio().
+#' @param indicador Identificador do indicador (ex.: "PRE_NATAL").
+#' @param comparacao Data frame do município comparado (opcional).
+#' @return Lista com min, max e passo de um eixo de cinco intervalos.
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao_indicador).
+#' @noRd
+limites_indicador <- function(series, indicador, comparacao = NULL) {
+  # Reunindo os valores do indicador nos municípios exibidos
+  valores <- c(series[[indicador]], if (!is.null(comparacao)) comparacao[[indicador]])
+  valores <- valores[is.finite(valores)]
+
+  # Abrindo uma faixa neutra quando o indicador não tem valor para desenhar
+  if (length(valores) == 0) {
+    return(list(min = 0, max = 1, passo = 1 / INTERVALOS_EIXO))
+  }
+
+  # Dando folga em torno de uma série constante (ex.: IDHM fixo no tempo)
+  inicio <- min(valores)
+  fim <- max(valores)
+  if (inicio == fim) {
+    folga <- abs(inicio) * 0.1
+    # Garantindo uma folga mínima para séries constantes próximas de zero
+    if (abs(inicio) < 1) folga <- max(folga, 0.05)
+    inicio <- max(0, inicio - folga)
+    fim <- fim + folga
+  }
+
+  # Buscando o menor passo que cobre os dados em cinco intervalos
+  info <- info_indicador(indicador)
+  passos <- passos_do_eixo(fim - inicio, 10^(-info$decimais))
+  for (passo in passos) {
+    # Múltiplos do passo que comportam a janela de cinco intervalos
+    k_minimo <- ceiling(max(0, fim - INTERVALOS_EIXO * passo) / passo - 1e-9)
+    k_maximo <- floor(inicio / passo + 1e-9)
+    if (k_minimo > k_maximo) {
+      next
+    }
+    # Centralizando a janela nos dados, dentro dos múltiplos possíveis
+    k <- round((inicio - (INTERVALOS_EIXO * passo - (fim - inicio)) / 2) / passo)
+    k <- min(max(k, k_minimo), k_maximo)
+    return(list(
+      min = k * passo,
+      max = (k + INTERVALOS_EIXO) * passo,
+      passo = passo
+    ))
+  }
+
+  # Fallback defensivo: do zero ao maior passo, sempre válido
+  passo <- passos[length(passos)]
+  list(min = 0, max = INTERVALOS_EIXO * passo, passo = passo)
+}
+
+#' Definindo uma função que monta o gráfico de evolução temporal de um indicador
+#'
+#' @param series Data frame retornado por series_municipio().
+#' @param indicador Identificador do indicador (ex.: "PRE_NATAL").
+#' @param nome Nome da localidade principal exibido no rótulo e no tooltip.
+#' @param comparacao Data frame do município comparado (opcional).
+#' @param nome_comparacao Nome do município comparado (opcional).
+#' @return Objeto echarts4r pronto para renderização.
+#' Usada em: mod_como.R (seção de indicadores do bloco).
+#' @noRd
+grafico_evolucao_indicador <- function(series, indicador, nome = NULL,
+                                       comparacao = NULL, nome_comparacao = NULL) {
+  # Identificando a cor do bloco do indicador e a escala do eixo
+  info <- info_indicador(indicador)
+  cor <- cor_linha_medida(info$bloco)
+  limites <- limites_indicador(series, indicador, comparacao)
+  # Garantindo, em passos fracionários, ao menos as casas do próprio indicador
+  casas <- casas_do_passo(limites$passo)
+  if (limites$passo < 1) casas <- max(casas, info$decimais)
+  # Mostrando o sufixo da unidade no eixo e no tooltip quando fizer sentido
+  sufixo <- if (info$unidade %in% c("%", "°C")) info$unidade else ""
+
+  # Montando a tabela do gráfico com uma coluna por localidade
+  dados <- data.frame(ano = series$ano, principal = series[[indicador]])
+  if (!is.null(comparacao)) {
+    dados$comparacao <- comparacao[[indicador]]
+  }
+
+  # Criando o gráfico e desenhando a série da localidade principal
+  grafico <- echarts4r::e_charts(dados, ano, renderer = "svg") |>
+    echarts4r::e_line_(
+      serie = "principal",
+      name = if (is.null(nome)) "Município" else nome,
+      symbol = "circle",
+      symbolSize = 4.5,
+      showSymbol = TRUE,
+      z = 3,
+      connectNulls = FALSE,
+      # Mantendo traço e véu mais discretos que os das medidas do índice
+      lineStyle = list(width = 2, color = cor, type = "solid"),
+      itemStyle = list(color = cor),
+      areaStyle = list(color = cor, opacity = 0.06)
+    )
+
+  # Acrescentando a linha tracejada do município comparado, quando houver
+  if (!is.null(dados$comparacao)) {
+    grafico <- grafico |>
+      echarts4r::e_line_(
+        serie = "comparacao",
+        name = if (is.null(nome_comparacao)) "Comparação" else nome_comparacao,
+        symbol = "circle",
+        # Mantendo a bolinha da comparação no mesmo tamanho da principal
+        symbolSize = 4.5,
+        showSymbol = TRUE,
+        # Desenhando abaixo da linha principal, que fica em evidência
+        z = 2,
+        connectNulls = FALSE,
+        # Diferenciando a comparação pelo traço tracejado com pontas arredondadas
+        lineStyle = list(
+          width = 2,
+          color = cor,
+          type = c(9, 7),
+          cap = "round"
+        ),
+        itemStyle = list(
+          color = "#FFFFFF",
+          borderColor = cor,
+          borderWidth = 2
+        ),
+        # Mantendo o mesmo véu chapado da linha principal sob a comparação
+        areaStyle = list(color = cor, opacity = 0.06)
+      )
+  }
+
+  # Finalizando eixos, tooltip e estilo geral do gráfico
+  grafico <- grafico |>
+    echarts4r::e_x_axis(
+      type = "value",
+      min = min(series$ano),
+      max = max(series$ano),
+      interval = 1,
+      # Formando os anos como inteiros, sem o separador de milhar do echarts
+      formatter = htmlwidgets::JS(
+        "function (valor) { return String(Math.round(valor)); }"
+      ),
+      axisLabel = list(color = "#5A6472", fontSize = 11),
+      axisLine = list(lineStyle = list(color = "#E3E6EB")),
+      axisTick = list(show = FALSE),
+      splitLine = list(show = FALSE)
+    ) |>
+    echarts4r::e_y_axis(
+      min = limites$min,
+      max = limites$max,
+      name = NULL,
+      # Marcando o eixo no passo redondo do indicador, com as casas do passo
+      interval = limites$passo,
+      axisLabel = list(
+        color = "#5A6472",
+        fontSize = 11,
+        formatter = htmlwidgets::JS(sprintf(
+          "function (valor) { return Number(valor).toFixed(%d).replace('.', ',') + '%s'; }",
+          casas, sufixo
+        ))
+      ),
+      axisLine = list(show = FALSE),
+      axisTick = list(show = FALSE),
+      splitLine = list(lineStyle = list(color = "#EEF0F4"))
+    ) |>
+    tooltip_echarts(
+      trigger = "axis",
+      # Usando as casas e a unidade do indicador nos valores do tooltip
+      formatter = tooltip_evolucao_js(info$decimais, sufixo),
+      extras = list(
+        axisPointer = list(type = "line", lineStyle = list(color = "#C7CCD4"))
+      )
+    ) |>
+    echarts4r::e_text_style(
+      fontFamily = FONTE_GRAFICOS,
+      color = COR_AZUL_ESCURO
+    ) |>
+    # Desligando a legenda do echarts, já que os municípios aparecem como chips
+    # na identificação acima das grades
+    echarts4r::e_legend(show = FALSE) |>
+    # Deixando o echarts reservar a coluna dos números, encostada no título
+    echarts4r::e_grid(left = 0, right = 12, top = 16, bottom = 28, containLabel = TRUE) |>
+    echarts4r::e_animation(duration = 350)
+
+  # Espaçando os rótulos de ano conforme a largura, sem passar pelo servidor
+  htmlwidgets::onRender(grafico, rotulos_anos_js())
+}
+
 #' Definindo uma função que monta o JavaScript do tooltip da evolução temporal
 #'
+#' @param decimais Número de casas decimais dos valores exibidos.
+#' @param sufixo Unidade exibida junto aos valores ("%" ou "°C"), quando houver.
 #' @return Texto de função JavaScript para o echarts.
-#' Usada em: fct_graficos_evolucao.R (grafico_evolucao).
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao e grafico_evolucao_indicador).
 #' @noRd
-tooltip_evolucao_js <- function() {
+tooltip_evolucao_js <- function(decimais = 1, sufixo = "") {
   paste0(
     "function (params) {
        if (!params || !params.length) return '';
-       var f = function (v) { return Number(v).toFixed(1).replace('.', ','); };
+       var f = function (v) { return Number(v).toFixed(", decimais, ").replace('.', ',') + '", sufixo, "'; };
+       var g = function (v) { return Number(v).toFixed(", decimais, ").replace('.', ','); };
        /* Buscando a cor das linhas entre as séries: o miolo branco da séries */
        /* comparada esconde a cor real no itemStyle dela */
        var corSerie = '#4B1D73';
@@ -326,7 +551,7 @@ tooltip_evolucao_js <- function() {
        if (valores.length === 2) {
          s += '<div style=\"display:flex;align-items:center;justify-content:space-between;gap:1.5rem;margin-top:5px;padding-top:5px;border-top:1px solid #EEF0F4;color:#5A6472\">' +
               '<span>Diferença</span>' +
-              '<b style=\"color:#5A6472;font-weight:600\">' + f(Math.abs(valores[0] - valores[1])) + '</b></div>';
+              '<b style=\"color:#5A6472;font-weight:600\">' + g(Math.abs(valores[0] - valores[1])) + '</b></div>';
        }
        return s;
      }"

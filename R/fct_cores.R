@@ -16,6 +16,20 @@ cor_medida <- function(medida) {
   MEDIDAS$cor[match(medida, MEDIDAS$medida)]
 }
 
+#' Definindo uma função que obtém a cor do traço de uma medida nos gráficos
+#'
+#' @param medida Identificador de medida ("indice_final", "bloco1"...).
+#' @return Cor do traço em hexadecimal, escurecendo o amarelo do Social.
+#' Usada em: fct_graficos_evolucao.R (evolução das medidas e dos indicadores).
+#' @noRd
+cor_linha_medida <- function(medida) {
+  # Escurecendo o traço do Social, cujo amarelo some em linha fina sobre o branco
+  if (identical(medida, "bloco1")) {
+    return(COR_LINHA_SOCIAL)
+  }
+  cor_medida(medida)
+}
+
 #' Definindo uma função que obtém a cor de uma categoria de vulnerabilidade
 #'
 #' @param categoria Vetor de categorias ("Muito baixo" ... "Muito alto").

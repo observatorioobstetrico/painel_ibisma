@@ -79,18 +79,20 @@ municipio_padrao <- function(dados = dados_ibisma()) {
   base$codmunres[which.max(base$valor)]
 }
 
-#' Definindo uma função que obtém as séries das sete medidas de um município
+#' Definindo uma função que obtém as séries das medidas e dos indicadores de um município
 #'
 #' @param dados Lista lida por dados_ibisma().
 #' @param codmunres Código do município.
-#' @return Data frame com uma linha por ano e uma coluna por medida.
-#' Usada em: mod_como.R (evolução e comparação).
+#' @param colunas Colunas pedidas; por padrão as sete medidas e os indicadores.
+#' @return Data frame com uma linha por ano e uma coluna por coluna disponível.
+#' Usada em: mod_como.R (evolução, comparação e indicadores).
 #' @noRd
-series_municipio <- function(dados, codmunres) {
-  # Selecionando as linhas do município na tabela de séries pronta
+series_municipio <- function(dados, codmunres,
+                             colunas = c(MEDIDAS$medida, INDICADORES$indicador)) {
+  # Selecionando as linhas do município nas colunas disponíveis na base pronta
   serie <- dados$series[
     dados$series$codmunres == codmunres,
-    c("ano", MEDIDAS$medida)
+    intersect(c("ano", colunas), names(dados$series))
   ]
   row.names(serie) <- NULL
   serie
@@ -99,11 +101,50 @@ series_municipio <- function(dados, codmunres) {
 #' Definindo uma função que verifica se uma série tem algum valor para desenhar
 #'
 #' @param series Data frame retornado por series_municipio().
-#' @return TRUE quando existe pelo menos um valor entre as sete medidas.
-#' Usada em: mod_como.R (evolução e comparação).
+#' @param colunas Colunas consideradas na verificação; por padrão as sete medidas.
+#' @return TRUE quando existe pelo menos um valor entre as colunas pedidas.
+#' Usada em: mod_como.R (evolução, comparação e indicadores).
 #' @noRd
-series_tem_valor <- function(series) {
-  any(!is.na(series[, MEDIDAS$medida]))
+series_tem_valor <- function(series, colunas = MEDIDAS$medida) {
+  # Reunindo os valores das colunas pedidas que existem na série
+  valores <- unlist(
+    series[, intersect(colunas, names(series)), drop = FALSE],
+    use.names = FALSE
+  )
+  any(!is.na(valores))
+}
+
+#' Definindo uma função que verifica se as séries já trazem os indicadores
+#'
+#' @param dados Lista lida por dados_ibisma().
+#' @return TRUE quando todas as colunas de INDICADORES existem nas séries.
+#' Usada em: mod_como.R (exibição da seção de indicadores).
+#' @noRd
+tem_indicadores <- function(dados) {
+  # Exigindo a base completa, para a seção só aparecer com os dados reconstruídos
+  all(INDICADORES$indicador %in% names(dados$series))
+}
+
+#' Definindo uma função que obtém os indicadores de um bloco
+#'
+#' @param bloco Identificador do bloco ("bloco1"..."bloco6").
+#' @return Data frame com as linhas de INDICADORES do bloco pedido.
+#' Usada em: mod_como.R (seção de indicadores do bloco).
+#' @noRd
+indicadores_do_bloco <- function(bloco) {
+  # Mantendo a ordem canônica do dicionário dentro de cada bloco
+  INDICADORES[INDICADORES$bloco == bloco, , drop = FALSE]
+}
+
+#' Definindo uma função que obtém os dados de um indicador no dicionário
+#'
+#' @param indicador Identificador do indicador (ex.: "PRE_NATAL").
+#' @return Data frame de uma linha com os dados do indicador no dicionário.
+#' Usada em: mod_como.R e fct_graficos_evolucao.R (título, unidade e cor do gráfico).
+#' @noRd
+info_indicador <- function(indicador) {
+  # Buscando a linha do dicionário correspondente ao indicador
+  INDICADORES[match(indicador, INDICADORES$indicador), , drop = FALSE]
 }
 
 #' Definindo uma função que obtém o nome de um município pelo código
