@@ -106,7 +106,43 @@ mod_como_ui <- function(id) {
           esqueleto_grade_evolucao(),
           classe = "esqueleto-slot--evolucao"
         )
-      )
+      ),
+      # Indicadores em detalhe, um bloco por vez, para os mesmos municípios
+      # A seção só aparece quando a base reconstrói as séries com os indicadores
+      if (tem_indicadores(dados_ibisma())) {
+        htmltools::tags$div(
+          class = "painel-bloco painel-bloco--indicadores",
+          htmltools::tags$div(
+            class = "bloco-cabecalho",
+            htmltools::tags$h3(class = "bloco-titulo", "Indicadores do bloco"),
+            htmltools::tags$p(
+              class = "bloco-descricao",
+              paste(
+                "Veja a evolução das peças que compõem cada bloco do IBISMA,",
+                "nos mesmos municípios e período da evolução acima."
+              )
+            )
+          ),
+          # Escolhendo o bloco em chips com a cor de identificação de cada dimensão
+          htmltools::tags$div(
+            class = "controles-inline indicadores-controles",
+            htmltools::tags$span(class = "controle-texto", "Ver indicadores do"),
+            shinyWidgets::radioGroupButtons(
+              inputId = ns("bloco"),
+              label = NULL,
+              choices = stats::setNames(BLOCOS$medida, BLOCOS$nome),
+              selected = BLOCOS$medida[1],
+              size = "sm"
+            )
+          ),
+          # Grade com os cartões do bloco escolhido e esqueleto empilhado
+          esqueleto_slot(
+            shiny::uiOutput(ns("indicadores")),
+            esqueleto_indicadores(),
+            classe = "esqueleto-slot--indicadores"
+          )
+        )
+      }
     )
   )
 }
@@ -366,6 +402,72 @@ mod_como_server <- function(id, dados, municipio) {
         ))
       }
       grade_evolucao_ui(ns)
+    })
+
+    # ----- Indicadores do bloco -----
+    ## Obs.: este bloco usa funções auxiliares de fct_graficos_evolucao, fct_dados e fct_ui.
+
+    # Definindo o bloco exibido no detalhe dos indicadores
+    bloco_indicadores <- shiny::reactive({
+      if (is.null(input$bloco)) BLOCOS$medida[1] else input$bloco
+    })
+
+    # Verificando se o indicador tem valor em algum dos municípios exibidos
+    indicador_tem_valor <- function(indicador) {
+      series_tem_valor(series_principal(), indicador) ||
+        (comparacao_tem_serie() && series_tem_valor(series_comparacao(), indicador))
+    }
+
+    # Renderizando um gráfico para cada indicador em um laço para evitar repetição
+    for (i in seq_len(nrow(INDICADORES))) {
+      local({
+        indicador <- INDICADORES$indicador[i]
+        output[[paste0("indicador_", indicador)]] <- echarts4r::renderEcharts4r({
+          shiny::req(indicador_tem_valor(indicador))
+          # Desenhando a linha comparada apenas quando ela tem valor próprio
+          comparacao <- if (comparacao_tem_serie() &&
+                            series_tem_valor(series_comparacao(), indicador)) {
+            series_comparacao()
+          } else {
+            NULL
+          }
+          grafico_evolucao_indicador(
+            series_principal(),
+            indicador = indicador,
+            nome = nome_municipio(dados, municipio()),
+            comparacao = comparacao,
+            nome_comparacao = if (is.null(comparacao)) NULL else {
+              nome_municipio(dados, cod_comparacao())
+            }
+          )
+        })
+      })
+    }
+
+    # Montando os cartões dos indicadores do bloco selecionado
+    output$indicadores <- shiny::renderUI({
+      shiny::req(series_tem_valor(series_principal()) || comparacao_tem_serie())
+      indicadores_bloco <- indicadores_do_bloco(bloco_indicadores())
+      cartoes <- lapply(indicadores_bloco$indicador, function(indicador) {
+        info <- info_indicador(indicador)
+        htmltools::tags$div(
+          class = "indicador-card",
+          style = paste0("--cor-bloco:", cor_medida(info$bloco), ";"),
+          htmltools::tags$h4(
+            class = "indicador-card__titulo",
+            info$nome
+          ),
+          if (indicador_tem_valor(indicador)) {
+            echarts4r::echarts4rOutput(
+              ns(paste0("indicador_", indicador)),
+              height = paste0(ALTURA_GRAFICO_INDICADOR, "px")
+            )
+          } else {
+            estado_vazio("Sem dados no período.")
+          }
+        )
+      })
+      htmltools::tags$div(class = "indicadores-grade", cartoes)
     })
   })
 }

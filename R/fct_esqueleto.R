@@ -497,3 +497,36 @@ esqueleto_grade_evolucao <- function() {
     })
   )
 }
+
+#' Definindo uma função que monta o esqueleto dos indicadores de um bloco
+#'
+#' @return Elemento HTML com os cartões dos indicadores do bloco padrão.
+#' Usada em: mod_como.R (esqueleto da seção de indicadores).
+#' @noRd
+esqueleto_indicadores <- function() {
+  # Reproduzindo um cartão de indicador com a área reservada para o gráfico
+  cartao <- function() {
+    altura <- ALTURA_GRAFICO_INDICADOR
+    htmltools::tags$div(
+      class = "indicador-card esqueleto--card-evolucao",
+      htmltools::tags$h4(
+        class = "indicador-card__titulo",
+        esqueleto_barra("7rem", "0.55em")
+      ),
+      htmltools::tags$div(
+        class = "esqueleto__grafico",
+        style = paste0("height:", altura, "px;"),
+        # Reservando a coluna dos números do eixo Y, como no gráfico real
+        esqueleto_grafico_margem(altura),
+        esqueleto_grafico_svg(altura)
+      )
+    )
+  }
+
+  htmltools::tags$div(
+    class = "indicadores-grade esqueleto esqueleto--indicadores",
+    `aria-hidden` = "true",
+    # Reservando os cinco cartões do bloco padrão do seletor
+    lapply(seq_len(5), function(i) cartao())
+  )
+}
