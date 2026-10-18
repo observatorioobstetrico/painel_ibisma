@@ -3,3 +3,10 @@
 .RData
 .Ruserdata
 dev/smoke/
+
+# Cache e bases derivadas da pipeline de indicadores (regeneráveis)
+data-raw/databases/dados/
+data-raw/databases/dados_cob_nasc_*.csv
+data-raw/databases/banco_dados_atualizado_2024_abril.csv
+data-raw/databases/indice_materno_final_2015_2024.csv
+
