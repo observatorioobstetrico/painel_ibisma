@@ -199,7 +199,7 @@ test_that("series_municipio monta as sete medidas em colunas", {
   expect_true(is.na(serie_lacuna$indice_final[serie_lacuna$ano == lacuna$ano]))
 })
 
-test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
+test_that("grafico_evolucao destaca a série principal com área chapada e sem rótulo na linha", {
   # Sem comparação existe apenas a série principal, com a cor da medida
   grafico <- grafico_evolucao(series_teste, "indice_final", nome = "Dois (RO)")
   expect_length(grafico$x$opts$series, 1)
@@ -208,11 +208,17 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   expect_equal(serie$itemStyle$color, cor_medida("indice_final"))
   expect_equal(serie$lineStyle$type, "solid")
   expect_true(serie$showSymbol)
+  # A bolinha do índice fica no meio do caminho entre os dois tamanhos antigos
+  expect_equal(serie$symbolSize, 7)
+  # Sem contorno na bolinha, a linha segue contínua por dentro do marcador
+  expect_null(serie$itemStyle$borderColor)
 
-  # O nome da localidade é o rótulo do fim da linha, sem legenda no gráfico
-  expect_true(serie$endLabel$show)
-  expect_equal(serie$endLabel$formatter, "{a}")
-  expect_equal(serie$endLabel$align, "right")
+  # A área sob a linha é chapada, na cor da série, com véu de 7%
+  expect_equal(serie$areaStyle$color, cor_medida("indice_final"))
+  expect_equal(serie$areaStyle$opacity, 0.07)
+
+  # O nome da localidade saiu do fim da linha: quem identifica é a seção
+  expect_null(serie$endLabel)
   expect_false(isTRUE(grafico$x$opts$legend$show))
 
   # O eixo X precisa formatar os anos como inteiros, sem separador de milhar
@@ -221,8 +227,10 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   expect_true(grepl("Math.round", as.character(formatter)))
 
   # O eixo Y começa no piso e termina no teto calculados da própria medida
-  expect_equal(grafico$x$opts$yAxis[[1]]$min, 70)
-  expect_equal(grafico$x$opts$yAxis[[1]]$max, 90)
+  expect_equal(grafico$x$opts$yAxis[[1]]$min, 50)
+  expect_equal(grafico$x$opts$yAxis[[1]]$max, 100)
+  # As linhas de grade marcam o eixo de 25 em 25
+  expect_equal(grafico$x$opts$yAxis[[1]]$interval, 25)
 
   # Os dois limites podem ser fixados pelo módulo na comparação
   compartilhado <- grafico_evolucao(
@@ -254,10 +262,16 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   expect_true(grepl("repeating-linear-gradient", tooltip, fixed = TRUE))
   expect_true(grepl("seriesIndex", tooltip, fixed = TRUE))
   expect_true(grepl("space-between", tooltip, fixed = TRUE))
-  # A marca da comparação usa a mesma cor clareada em direção ao branco
-  expect_true(grepl("clarear", tooltip, fixed = TRUE))
-  expect_true(grepl("0.55", tooltip, fixed = TRUE))
+  # A marca usa a própria cor da linha, sem clareamento para a comparação
+  expect_false(grepl("clarear", tooltip, fixed = TRUE))
   expect_false(grepl("rgba(", tooltip, fixed = TRUE))
+  # A bolinha da principal funde com o traço: sem halo branco separando os dois
+  expect_false(grepl("0 0 0 1.5px #FFFFFF", tooltip, fixed = TRUE))
+  # Com as duas séries no mesmo ano, o tooltip fecha a diferença entre elas,
+  # sem sufixo de unidade e em tom mais suave que o valor da série
+  expect_true(grepl("Diferença", tooltip, fixed = TRUE))
+  expect_false(grepl("pts", tooltip, fixed = TRUE))
+  expect_true(grepl("color:#5A6472;font-weight:600", tooltip, fixed = TRUE))
   expect_false(grepl("IBISMA", tooltip, fixed = TRUE))
 
   # O tooltip acompanha o cursor com transição mais curta que o padrão do echarts
@@ -265,7 +279,7 @@ test_that("grafico_evolucao desenha uma medida com o nome no fim da linha", {
   expect_equal(grafico$x$opts$tooltip$trigger, "axis")
 })
 
-test_that("grafico_evolucao destaca a comparação com traço pontilhado", {
+test_that("grafico_evolucao diferencia a comparação pelo traço e pelo símbolo vazado", {
   comparacao <- series_teste
   comparacao$bloco1 <- c(40, 90)
   grafico <- grafico_evolucao(
@@ -275,74 +289,67 @@ test_that("grafico_evolucao destaca a comparação com traço pontilhado", {
     nome_comparacao = "Quatro (SP)"
   )
 
-  # As duas localidades usam a mesma cor, diferenciadas pelo traço
+  # As duas localidades usam a mesma cor, com o amarelo do Social escurecido
   expect_length(grafico$x$opts$series, 2)
   linha_principal <- grafico$x$opts$series[[1]]
   linha_comparada <- grafico$x$opts$series[[2]]
   expect_equal(linha_comparada$name, "Quatro (SP)")
-  expect_equal(linha_principal$lineStyle$color, cor_medida("bloco1"))
-  expect_equal(linha_comparada$lineStyle$color, cor_medida("bloco1"))
-  expect_equal(linha_comparada$lineStyle$type, "dotted")
-  expect_true(linha_comparada$lineStyle$opacity < 1)
+  expect_equal(linha_principal$lineStyle$color, COR_LINHA_SOCIAL)
+  expect_equal(linha_comparada$lineStyle$color, COR_LINHA_SOCIAL)
+  expect_equal(linha_principal$lineStyle$type, "solid")
+  # A comparação tem traço tracejado longo, com pontas arredondadas
+  expect_equal(linha_comparada$lineStyle$type, c(9, 7))
+  expect_equal(linha_comparada$lineStyle$cap, "round")
   expect_true(linha_comparada$z < linha_principal$z)
 
-  # Os dois nomes vão para o fim das linhas, respeitando o lado calculado
-  expect_equal(linha_principal$endLabel$formatter, "{a}")
-  expect_equal(linha_comparada$endLabel$formatter, "{a}")
+  # As bolinhas ficam sempre visíveis, no mesmo tamanho nas duas séries
+  expect_true(linha_principal$showSymbol)
+  expect_equal(linha_principal$symbolSize, 5.5)
+  expect_equal(linha_comparada$symbolSize, 5.5)
+  expect_equal(linha_principal$itemStyle$color, COR_LINHA_SOCIAL)
+  # A bolinha principal não tem contorno, para a linha seguir contínua por dentro
+  expect_null(linha_principal$itemStyle$borderColor)
+  # A da comparação é vazada, com o miolo branco e o anel na cor da linha
+  expect_true(linha_comparada$showSymbol)
+  expect_equal(linha_comparada$itemStyle$color, "#FFFFFF")
+  expect_equal(linha_comparada$itemStyle$borderColor, COR_LINHA_SOCIAL)
+
+  # As duas áreas são chapadas, na cor da série, com o mesmo véu de 7%
+  expect_equal(linha_principal$areaStyle$color, COR_LINHA_SOCIAL)
+  expect_equal(linha_principal$areaStyle$opacity, 0.07)
+  expect_equal(linha_comparada$areaStyle$color, COR_LINHA_SOCIAL)
+  expect_equal(linha_comparada$areaStyle$opacity, 0.07)
+
+  # As linhas não projetam sombra
+  expect_null(linha_principal$lineStyle$shadowBlur)
+  expect_null(linha_comparada$lineStyle$shadowBlur)
+
+  # Nenhuma série leva rótulo no fim da linha
+  expect_null(linha_principal$endLabel)
+  expect_null(linha_comparada$endLabel)
 
   # Nenhuma série apaga a outra no hover (sem foco de série no destaque)
   expect_null(linha_principal$emphasis)
   expect_null(linha_comparada$emphasis)
 })
 
-test_that("lados_rotulos separa rótulos próximos e respeita as bordas do eixo", {
-  # Fins bem separados mantêm cada rótulo no lado natural do próprio ponto
-  lados <- lados_rotulos(data.frame(principal = c(1, 95), comparacao = c(1, 60)), 50, 100)
-  expect_equal(lados$principal$lado, "abaixo")
-  expect_equal(lados$comparacao$lado, "acima")
-
-  # Fins próximos e longe do topo ficam em lados opostos
-  lados <- lados_rotulos(data.frame(principal = c(60, 70), comparacao = c(60, 68)), 50, 100)
-  expect_equal(lados$principal$lado, "acima")
-  expect_equal(lados$comparacao$lado, "abaixo")
-
-  # Fins próximos e perto do topo descem juntos, com afastamentos diferentes
-  lados <- lados_rotulos(data.frame(principal = c(60, 99), comparacao = c(60, 98.5)), 90, 100)
-  expect_equal(lados$principal$lado, "abaixo")
-  expect_equal(lados$comparacao$lado, "abaixo")
-  expect_true(lados$principal$afastamento != lados$comparacao$afastamento)
-
-  # Fins próximos e no piso do eixo sobem juntos, com afastamentos diferentes
-  lados <- lados_rotulos(data.frame(principal = c(95, 91), comparacao = c(1, 90.5)), 90, 100)
-  expect_equal(lados$principal$lado, "acima")
-  expect_equal(lados$comparacao$lado, "acima")
-  expect_true(lados$principal$afastamento != lados$comparacao$afastamento)
-
-  # Sem comparação o rótulo sobe, a menos que a série termine no topo
-  expect_equal(lados_rotulos(data.frame(principal = c(60, 70)), 50, 100)$principal$lado, "acima")
-  expect_equal(lados_rotulos(data.frame(principal = c(60, 95)), 50, 100)$principal$lado, "abaixo")
-
-  # O teto menor encolhe a faixa e aproxima o corte de "perto do topo"
-  expect_equal(lados_rotulos(data.frame(principal = c(60, 78)), 50, 80)$principal$lado, "abaixo")
-})
-
-test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
-  # O menor valor da série fica em 25, então o eixo começa em 20
-  expect_equal(piso_eixo_y(series_teste), 20)
+test_that("piso_eixo_y arredonda o menor valor para baixo no múltiplo de 25", {
+  # O menor valor da série fica em 25, então o eixo começa em 25
+  expect_equal(piso_eixo_y(series_teste), 25)
 
   # O piso pode ser calculado apenas com um grupo de medidas
-  expect_equal(piso_eixo_y(series_teste, "indice_final"), 70)
-  expect_equal(piso_eixo_y(series_teste, BLOCOS$medida), 20)
+  expect_equal(piso_eixo_y(series_teste, "indice_final"), 50)
+  expect_equal(piso_eixo_y(series_teste, BLOCOS$medida), 25)
 
-  # Valores altos aproximam o piso de 100, sem criar um eixo degenerado
+  # Valores altos aproximam o piso do topo, sem criar um eixo degenerado
   alto <- series_teste
   alto[, MEDIDAS$medida] <- 95
   alto$indice_final[alto$ano == 2021] <- 91
-  expect_equal(piso_eixo_y(alto), 90)
+  expect_equal(piso_eixo_y(alto), 75)
 
   cem <- series_teste
   cem[, MEDIDAS$medida] <- 100
-  expect_equal(piso_eixo_y(cem), 90)
+  expect_equal(piso_eixo_y(cem), 75)
 
   # Série sem valor algum mantém o eixo na escala completa
   vazio <- series_teste
@@ -350,18 +357,18 @@ test_that("piso_eixo_y arredonda o menor valor para baixo na dezena", {
   expect_equal(piso_eixo_y(vazio), 0)
 })
 
-test_that("teto_eixo_y arredonda o maior valor para cima na dezena", {
-  # O maior valor da série fica em 90, então o eixo termina em 90
-  expect_equal(teto_eixo_y(series_teste), 90)
+test_that("teto_eixo_y arredonda o maior valor para cima no múltiplo de 25", {
+  # O maior valor da série fica em 90, então o eixo termina em 100
+  expect_equal(teto_eixo_y(series_teste), 100)
 
   # O teto pode ser calculado apenas com um grupo de medidas
-  expect_equal(teto_eixo_y(series_teste, "indice_final"), 90)
-  expect_equal(teto_eixo_y(series_teste, BLOCOS$medida), 90)
+  expect_equal(teto_eixo_y(series_teste, "indice_final"), 100)
+  expect_equal(teto_eixo_y(series_teste, BLOCOS$medida), 100)
 
-  # Valores baixos mantêm uma dezena mínima para o eixo não degenerar
+  # Valores baixos mantêm um múltiplo mínimo para o eixo não degenerar
   baixo <- series_teste
   baixo[, MEDIDAS$medida] <- 5
-  expect_equal(teto_eixo_y(baixo), 10)
+  expect_equal(teto_eixo_y(baixo), 25)
 
   # Valores no topo da escala param no limite do índice
   alto <- series_teste
@@ -426,7 +433,13 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
       # Cada gráfico desenha a localidade principal e a comparação
       series_bloco <- opcoes_do_grafico(output$grafico_bloco1)$series
       expect_length(series_bloco, 2)
-      expect_equal(series_bloco[[2]]$lineStyle$type, "dotted")
+      # A comparação repete a cor da principal, com tracejado longo e bolinha vazada
+      expect_equal(
+        series_bloco[[2]]$lineStyle$color,
+        series_bloco[[1]]$lineStyle$color
+      )
+      expect_equal(series_bloco[[2]]$lineStyle$type, list(9, 7))
+      expect_equal(series_bloco[[2]]$itemStyle$color, "#FFFFFF")
 
       # A identificação reúne os dois municípios e o período dos gráficos
       identificacao <- as.character(output$evolucao_identificacao$html)
@@ -459,23 +472,14 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
   )
 })
 
-test_that("os títulos da evolução levam a bolinha da dimensão", {
+test_that("os títulos da evolução ficam só com o texto, sem bolinha de cor", {
   grade <- as.character(grade_evolucao_ui(shiny::NS("como")))
-  # Cada um dos sete cartões tem a própria bolinha com a cor da medida
-  expect_equal(
-    lengths(regmatches(grade, gregexpr("evolucao-card__ponto", grade))),
-    7
-  )
-  expect_true(grepl(
-    paste0("--cor-medida:", cor_medida("indice_final")),
-    grade,
-    fixed = TRUE
-  ))
-  expect_true(grepl(
-    paste0("--cor-medida:", cor_medida("bloco3")),
-    grade,
-    fixed = TRUE
-  ))
+  # Os sete títulos continuam na grade, apenas como texto
+  expect_true(grepl("IBISMA", grade, fixed = TRUE))
+  expect_true(grepl("Blocos do IBISMA", grade, fixed = TRUE))
+  # A bolinha colorida e a variável de cor dela saíram dos cartões
+  expect_false(grepl("evolucao-card__ponto", grade, fixed = TRUE))
+  expect_false(grepl("--cor-medida", grade, fixed = TRUE))
 })
 
 test_that("formatadores usam a convenção brasileira", {

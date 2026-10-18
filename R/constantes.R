@@ -25,6 +25,10 @@ COR_IBISMA <- "#4B1D73"
 ## Usada em: fct_cores.R (categoria ausente) e fct_mapa.R (legenda).
 COR_SEM_DADOS <- "#D8DCE3"
 
+# Definindo o tom escurecido do amarelo do bloco Social para traços finos
+## Usada em: fct_graficos_evolucao.R (linha do Social, que some no branco em amarelo).
+COR_LINHA_SOCIAL <- "#D99E00"
+
 # -----------------------------------------------------------------------------
 #   CATEGORIAS E RAMPAS DE COR
 # -----------------------------------------------------------------------------
