@@ -1023,7 +1023,7 @@ input:focus-visible,
 
 /* Destacando o nome do município e a UF no perfil */
 .perfil-nome {
-  font-size: var(--fonte-titulo-home-size);
+  font-size: var(--fonte-destaque-caixas-size);
   font-weight: 700;
   margin: 0 0 0.75rem 0;
 }

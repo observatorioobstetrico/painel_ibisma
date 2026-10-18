@@ -253,9 +253,9 @@ test_that("grafico_evolucao destaca a série principal com área chapada e sem r
   # Sem contorno na bolinha, a linha segue contínua por dentro do marcador
   expect_null(serie$itemStyle$borderColor)
 
-  # A área sob a linha é chapada, na cor da série, com véu de 7%
+  # A área sob a linha é chapada, na cor da série, com a opacidade configurada
   expect_equal(serie$areaStyle$color, cor_medida("indice_final"))
-  expect_equal(serie$areaStyle$opacity, 0.07)
+  expect_equal(serie$areaStyle$opacity, OPACIDADE_AREA_EVOLUCAO)
 
   # O nome da localidade saiu do fim da linha: quem identifica é a seção
   expect_null(serie$endLabel)
@@ -354,11 +354,11 @@ test_that("grafico_evolucao diferencia a comparação pelo traço e pelo símbol
   expect_equal(linha_comparada$itemStyle$color, "#FFFFFF")
   expect_equal(linha_comparada$itemStyle$borderColor, COR_LINHA_SOCIAL)
 
-  # As duas áreas são chapadas, na cor da série, com o mesmo véu de 7%
+  # As duas áreas são chapadas, na cor da série, com a opacidade configurada
   expect_equal(linha_principal$areaStyle$color, COR_LINHA_SOCIAL)
-  expect_equal(linha_principal$areaStyle$opacity, 0.07)
+  expect_equal(linha_principal$areaStyle$opacity, OPACIDADE_AREA_EVOLUCAO)
   expect_equal(linha_comparada$areaStyle$color, COR_LINHA_SOCIAL)
-  expect_equal(linha_comparada$areaStyle$opacity, 0.07)
+  expect_equal(linha_comparada$areaStyle$opacity, OPACIDADE_AREA_EVOLUCAO)
 
   # As linhas não projetam sombra
   expect_null(linha_principal$lineStyle$shadowBlur)
@@ -545,9 +545,9 @@ test_that("formatadores usam a convenção brasileira", {
   expect_equal(formatar_numero(0.04), "0,0")
 })
 
-test_that("frase_percentil limita o texto a 99,9% com uma casa decimal", {
-  expect_match(frase_percentil(99.96), "99,9%")
-  expect_match(frase_percentil(100), "99,9%")
+test_that("frase_percentil mostra o percentil com uma casa decimal", {
+  expect_match(frase_percentil(99.96), "100,0%")
+  expect_match(frase_percentil(100), "100,0%")
   expect_match(frase_percentil(50), "50,0%")
   expect_match(frase_percentil(NA), "Sem dado")
 })

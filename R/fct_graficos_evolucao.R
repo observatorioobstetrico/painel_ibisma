@@ -33,6 +33,9 @@ PASSOS_EIXO <- c(1, 1.5, 2, 2.5, 5, 10)
 # Definindo o número de intervalos (e de ticks) dos eixos dos indicadores
 INTERVALOS_EIXO <- 5
 
+# Definindo a opacidade do preenchimento sob as linhas da evolução (0 desliga)
+OPACIDADE_AREA_EVOLUCAO <- 0
+
 #' Definindo uma função que aplica o tooltip padrão do IBISMA a um gráfico echarts4r
 #'
 #' @param grafico Objeto echarts4r.
@@ -196,8 +199,8 @@ grafico_evolucao <- function(series, medida, nome = NULL,
       lineStyle = list(width = largura, color = cor, type = "solid"),
       # Sem contorno na bolinha: a linha segue contínua por dentro do marcador
       itemStyle = list(color = cor),
-      # Preenchendo a área sob a linha com um véu chapado bem discreto
-      areaStyle = list(color = cor, opacity = 0.07)
+      # Preenchendo a área sob a linha conforme a opacidade configurada
+      areaStyle = list(color = cor, opacity = OPACIDADE_AREA_EVOLUCAO)
     )
 
   # Acrescentando a linha tracejada do município comparado, quando houver
@@ -225,8 +228,8 @@ grafico_evolucao <- function(series, medida, nome = NULL,
           borderColor = cor,
           borderWidth = 2
         ),
-        # Mantendo o mesmo véu chapado da linha principal sob a comparação
-        areaStyle = list(color = cor, opacity = 0.07)
+        # Mantendo o mesmo preenchimento da linha principal sob a comparação
+        areaStyle = list(color = cor, opacity = OPACIDADE_AREA_EVOLUCAO)
       )
   }
 
@@ -403,10 +406,10 @@ grafico_evolucao_indicador <- function(series, indicador, nome = NULL,
       showSymbol = TRUE,
       z = 3,
       connectNulls = FALSE,
-      # Mantendo traço e véu mais discretos que os das medidas do índice
+      # Desenhando o traço com a cor do bloco do indicador
       lineStyle = list(width = 2, color = cor, type = "solid"),
       itemStyle = list(color = cor),
-      areaStyle = list(color = cor, opacity = 0.06)
+      areaStyle = list(color = cor, opacity = OPACIDADE_AREA_EVOLUCAO)
     )
 
   # Acrescentando a linha tracejada do município comparado, quando houver
@@ -434,8 +437,8 @@ grafico_evolucao_indicador <- function(series, indicador, nome = NULL,
           borderColor = cor,
           borderWidth = 2
         ),
-        # Mantendo o mesmo véu chapado da linha principal sob a comparação
-        areaStyle = list(color = cor, opacity = 0.06)
+        # Mantendo o mesmo preenchimento da linha principal sob a comparação
+        areaStyle = list(color = cor, opacity = OPACIDADE_AREA_EVOLUCAO)
       )
   }
 

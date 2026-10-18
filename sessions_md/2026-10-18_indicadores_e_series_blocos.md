@@ -73,7 +73,9 @@ por bloco.
     no tooltip;
   - `containLabel` no `e_grid` para a coluna dos números encostar no título —
     a mesma folga de ~3 px dos gráficos dos blocos, sem estimar largura de
-    texto.
+    texto;
+  - o preenchimento sob as linhas fica no parâmetro `OPACIDADE_AREA_EVOLUCAO`
+    (desligado nesta sessão, valendo para as medidas e para os indicadores).
 
 ## 5. Seção "Indicadores do bloco" (`mod_como.R`, `fct_esqueleto.R`, CSS)
 
@@ -116,6 +118,10 @@ por bloco.
 
 ## 8. Versionamento e ambiente
 
+- Ajustes de acabamento no fim da sessão: a frase do percentil passou a mostrar
+  o valor real (o município mais vulnerável chega a "acima de 100,0%", sem
+  travar em 99,9%) e o nome do município no perfil usa o tamanho de destaque das
+  caixas.
 - Bases **derivadas** e cache ignorados no git (`data-raw/databases/dados/`,
   `dados_cob_nasc_*.csv`, `banco_dados_atualizado_2024_abril.csv` e
   `indice_materno_final_2015_2024.csv`), por serem regeneráveis.
@@ -147,4 +153,5 @@ por bloco.
 - `79b2eae` Reconstrói as bases do aplicativo com os indicadores
 - `6a8111e` Ignora as bases derivadas e o cache da pipeline de indicadores
 - `ede5a40` Registra o bundle do deploy mais recente do shinyapps
-- `(este commit)` Documenta a sessão dos indicadores e das séries históricas
+- `3ffef48` Documenta a sessão dos indicadores e das séries históricas
+- `(este commit)` Desliga as áreas sombreadas e ajusta os textos do perfil
