@@ -441,11 +441,18 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
       expect_equal(series_bloco[[2]]$lineStyle$type, list(9, 7))
       expect_equal(series_bloco[[2]]$itemStyle$color, "#FFFFFF")
 
-      # A identificação reúne os dois municípios e o período dos gráficos
+      # A identificação reúne os dois municípios, sem separador nem período
       identificacao <- as.character(output$evolucao_identificacao$html)
       expect_true(grepl(nome_municipio(dados, principal), identificacao, fixed = TRUE))
       expect_true(grepl(nome_municipio(dados, comparado), identificacao, fixed = TRUE))
-      expect_true(grepl(as.character(ano_ref), identificacao, fixed = TRUE))
+      expect_false(grepl("evolucao-identificacao__periodo", identificacao, fixed = TRUE))
+      expect_false(grepl("evolucao-identificacao__separador", identificacao, fixed = TRUE))
+      # Cada nome vem com a amostra do traço e da bolinha usados no próprio gráfico
+      expect_true(grepl(
+        "evolucao-identificacao__amostra--comparacao",
+        identificacao,
+        fixed = TRUE
+      ))
 
       # Sem comparação o eixo do IBISMA segue apenas o município principal
       session$setInputs(comparar = "nenhum")
@@ -463,6 +470,12 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
       identificacao <- as.character(output$evolucao_identificacao$html)
       expect_true(grepl(nome_municipio(dados, principal), identificacao, fixed = TRUE))
       expect_false(grepl(nome_municipio(dados, comparado), identificacao, fixed = TRUE))
+      # Sem comparação não existe amostra tracejada na identificação
+      expect_false(grepl(
+        "evolucao-identificacao__amostra--comparacao",
+        identificacao,
+        fixed = TRUE
+      ))
 
       # Com o principal sem dado, os gráficos ficam suspensos na grade
       session$setInputs(comparar = as.character(comparado), municipio = "999999")

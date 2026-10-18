@@ -330,25 +330,31 @@ mod_como_server <- function(id, dados, municipio) {
       })
     }
 
-    # Montando a identificação dos municípios e do período exibidos na grade
+    # Montando o nome de um município com a amostra do traço usado no gráfico
+    chip_municipio <- function(nome, comparado = FALSE) {
+      htmltools::tags$span(
+        class = "evolucao-identificacao__serie",
+        htmltools::tags$span(class = paste0(
+          "evolucao-identificacao__amostra",
+          if (comparado) " evolucao-identificacao__amostra--comparacao"
+        )),
+        nome
+      )
+    }
+
+    # Montando a identificação dos municípios exibidos na grade
     output$evolucao_identificacao <- shiny::renderUI({
       # Escondendo a identificação quando o município não tem série temporal
       shiny::req(series_tem_valor(series_principal()))
-      # Reunindo o principal e, quando houver série, o comparado
-      nomes <- nome_municipio(dados, municipio())
+      # Mostrando cada município com o traço e a bolinha do próprio gráfico
+      nomes <- list(chip_municipio(nome_municipio(dados, municipio())))
       if (comparacao_tem_serie()) {
-        nomes <- paste0(nomes, " e ", nome_municipio(dados, cod_comparacao()))
+        nomes <- c(nomes, list(chip_municipio(
+          nome_municipio(dados, cod_comparacao()),
+          comparado = TRUE
+        )))
       }
-      periodos <- range(dados$anos)
-      htmltools::tags$p(
-        class = "evolucao-identificacao",
-        htmltools::tags$span(class = "evolucao-identificacao__nomes", nomes),
-        htmltools::tags$span(class = "evolucao-identificacao__separador", "|"),
-        htmltools::tags$span(
-          class = "evolucao-identificacao__periodo",
-          paste0(periodos[1], " – ", periodos[2])
-        )
-      )
+      htmltools::tags$p(class = "evolucao-identificacao", nomes)
     })
 
     # Inserindo a grade de cartões apenas quando existir algum valor
