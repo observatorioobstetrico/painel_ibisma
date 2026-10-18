@@ -13,65 +13,101 @@ series_teste <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Base bruta de referência, lida direto do CSV de entrada (fora do build)
-caminho_base <- testthat::test_path(
-  "..", "..", "data-raw", "databases", "base_exemplo_ibisma.csv"
+# Base de referência da pipeline de indicadores, lida direto dos CSVs (fora do build)
+caminho_indice <- testthat::test_path(
+  "..", "..", "data-raw", "databases", "indice_materno_final_2015_2024.csv"
 )
-tem_base <- file.exists(caminho_base)
-if (tem_base) {
-  base_referencia <- unique(read.csv(caminho_base))
+caminho_indicadores <- testthat::test_path(
+  "..", "..", "data-raw", "databases", "banco_dados_atualizado_2024_abril.csv"
+)
+caminho_hemo <- testthat::test_path(
+  "..", "..", "data-raw", "databases", "dados_servicos_hemo.csv"
+)
+tem_pipeline <- all(file.exists(caminho_indice, caminho_indicadores, caminho_hemo))
+if (tem_pipeline) {
+  indice_referencia <- unique(read.csv(caminho_indice))
 }
 
-# Pulando os testes da base quando o CSV do data-raw não está presente
-exigir_base <- function() {
-  testthat::skip_if_not(tem_base, "CSV da base bruta não disponível")
+# Pulando os testes da base quando os CSVs da pipeline não estão presentes
+exigir_pipeline <- function() {
+  testthat::skip_if_not(tem_pipeline, "CSVs da pipeline não disponíveis")
 }
 
 test_that("os dados prontos têm cadastro, anos e séries completos", {
-  exigir_base()
+  exigir_pipeline()
   dados <- dados_ibisma()
 
   # O cadastro tem os municípios e os anos da base bruta
-  expect_equal(dados$anos, sort(unique(base_referencia$ano)))
-  expect_equal(nrow(dados$municipios), length(unique(base_referencia$codmunres)))
+  expect_equal(dados$anos, sort(unique(indice_referencia$ano)))
+  expect_equal(nrow(dados$municipios), length(unique(indice_referencia$codmunres)))
   expect_setequal(names(dados$municipios), c(
     "codmunres", "municipio", "sigla_uf", "uf",
     "regiao", "r_saude", "macro_r_saude"
   ))
 
-  # As séries têm uma linha por município e ano, com as sete medidas
+  # As séries têm uma linha por município e ano, com as medidas e os indicadores
   expect_equal(nrow(dados$series), length(dados$anos) * nrow(dados$municipios))
-  expect_equal(names(dados$series), c("codmunres", "ano", MEDIDAS$medida))
+  expect_equal(
+    names(dados$series),
+    c(
+      "codmunres", "ano", MEDIDAS$medida,
+      intersect(INDICADORES$indicador, names(dados$series))
+    )
+  )
 })
 
-test_that("as séries prontas batem com a base bruta", {
-  exigir_base()
+test_that("as séries prontas batem com os CSVs da pipeline", {
+  exigir_pipeline()
   dados <- dados_ibisma()
+  testthat::skip_if_not(
+    tem_indicadores(dados),
+    "séries prontas sem indicadores (rode data-raw/cria_rda.R)"
+  )
 
-  # Ligando cada linha da série à linha correspondente da base bruta
+  # Ligando cada linha da série à linha correspondente do índice final
   chave_serie <- paste(dados$series$ano, dados$series$codmunres)
-  chave_base <- paste(base_referencia$ano, base_referencia$codmunres)
-  posicao <- match(chave_serie, chave_base)
+  chave_indice <- paste(indice_referencia$ano, indice_referencia$codmunres)
+  posicao <- match(chave_serie, chave_indice)
 
+  # O índice e os blocos saem do CSV final, em percentis de 0 a 1
   for (medida in MEDIDAS$medida) {
+    coluna <- if (medida == "indice_final") "indice_mf_v1" else medida
     expect_equal(
       dados$series[[medida]],
-      100 * base_referencia[[medida]][posicao],
+      100 * indice_referencia[[coluna]][posicao],
       tolerance = 1e-12
     )
+  }
+
+  # Os indicadores saem da base intermediária, com a hemoterapia em separado
+  brutos <- unique(read.csv(caminho_indicadores))
+  hemo <- unique(read.csv(caminho_hemo))
+  chave_brutos <- paste(brutos$ano, brutos$codmunres)
+  chave_hemo <- paste(hemo$ano, hemo$codmunres)
+  posicao_brutos <- match(chave_serie, chave_brutos)
+  posicao_hemo <- match(chave_serie, chave_hemo)
+
+  for (i in seq_len(nrow(INDICADORES))) {
+    indicador <- INDICADORES$indicador[i]
+    if (indicador == "leitos_obst_med_transfusional") {
+      bruto <- hemo$indicador5[posicao_hemo]
+    } else {
+      bruto <- brutos[[indicador]][posicao_brutos]
+    }
+    esperado <- INDICADORES$fator[i] * bruto
+    esperado[is.nan(esperado)] <- NA
+    # Anos ausentes da pipeline ficam sem dado na série, mesmo com valor na fonte
+    esperado[is.na(posicao)] <- NA
+    expect_equal(dados$series[[indicador]], esperado, tolerance = 1e-12)
   }
 })
 
 test_that("as tabelas anuais usam as medidas e as categorias do painel", {
-  exigir_base()
+  exigir_pipeline()
   dados <- dados_ibisma()
 
-  # As medidas de constantes.R precisam cobrir as colunas do CSV de entrada
-  colunas_geo <- c(
-    "ano", "codmunres", "municipio", "sigla_uf", "uf",
-    "regiao", "r_saude", "macro_r_saude"
-  )
-  expect_setequal(setdiff(names(base_referencia), colunas_geo), MEDIDAS$medida)
+  # A pipeline precisa entregar os blocos e o índice que viram as medidas do painel
+  expect_true(all(c(BLOCOS$medida, "indice_mf_v1") %in% names(indice_referencia)))
 
   for (ano in dados$anos) {
     tabela <- tabela_ano(dados, ano)
@@ -178,18 +214,22 @@ test_that("o palco fica vazio quando o município não tem dado no ano", {
   )
 })
 
-test_that("series_municipio monta as sete medidas em colunas", {
+test_that("series_municipio monta as medidas e os indicadores em colunas", {
   dados <- dados_ibisma()
   cod <- dados$municipios$codmunres[1]
 
+  colunas_esperadas <- c(
+    "ano", MEDIDAS$medida,
+    intersect(INDICADORES$indicador, names(dados$series))
+  )
   series <- series_municipio(dados, cod)
-  expect_equal(names(series), c("ano", MEDIDAS$medida))
+  expect_equal(names(series), colunas_esperadas)
   expect_equal(nrow(series), length(dados$anos))
   expect_true(series_tem_valor(series))
 
   # Município fora da base não tem linhas na tabela pronta de séries
   vazio <- series_municipio(dados, 999999)
-  expect_equal(names(vazio), c("ano", MEDIDAS$medida))
+  expect_equal(names(vazio), colunas_esperadas)
   expect_equal(nrow(vazio), 0)
   expect_false(series_tem_valor(vazio))
 
@@ -527,10 +567,10 @@ test_that("paletas e cores seguem a configuração do projeto", {
 })
 
 test_that("opções de medida, ano e escopo do ranking estão completas", {
-  exigir_base()
+  exigir_pipeline()
   # As medidas do seletor são o dicionário central, com o prefixo "Bloco" nos rótulos
   expect_equal(MEDIDAS$rotulo[-1], paste("Bloco", MEDIDAS$nome[-1]))
-  expect_equal(dados_ibisma()$anos, sort(unique(base_referencia$ano)))
+  expect_equal(dados_ibisma()$anos, sort(unique(indice_referencia$ano)))
 
   # Conferindo as opções do seletor de escopo embutidas na própria seção Onde?
   ui <- as.character(mod_onde_ui("onde"))
@@ -1399,4 +1439,237 @@ test_that("esqueletos preservam a estrutura de cada output", {
   expect_true(grepl("esqueleto-slot", slot, fixed = TRUE))
   expect_true(grepl('id="saida"', slot, fixed = TRUE))
   expect_true(grepl("esqueleto--texto", slot, fixed = TRUE))
+})
+
+# ---------------------------------------------------------------------------
+#   Indicadores dos blocos
+# ---------------------------------------------------------------------------
+
+test_that("o dicionário dos indicadores cobre os blocos na ordem canônica", {
+  # Um indicador por código do cálculo e uma rodada de configurações completa
+  expect_equal(nrow(INDICADORES), 16)
+  expect_equal(anyDuplicated(INDICADORES$indicador), 0)
+  expect_equal(anyDuplicated(INDICADORES$codigo), 0)
+  expect_setequal(unique(INDICADORES$bloco), BLOCOS$medida)
+  # O IDHM pede três casas decimais e os demais indicadores pedem uma
+  expect_equal(info_indicador("idhm")$decimais, 3)
+  expect_true(all(INDICADORES$decimais[INDICADORES$indicador != "idhm"] == 1))
+  expect_true(all(INDICADORES$fator %in% c(1, 100)))
+  expect_true(all(nzchar(INDICADORES$nome)))
+  expect_true(all(nzchar(INDICADORES$unidade)))
+  # Os títulos seguem os nomes oficiais do cálculo do índice
+  expect_equal(
+    info_indicador("NASC_CES")$nome,
+    "Porcentagem de nascidos vivos por cesariana"
+  )
+  expect_equal(
+    info_indicador("DIST_RES")$nome,
+    "Medianas de deslocamento para partos ocorridos fora do município de residência da mulher"
+  )
+
+  # A contagem por bloco acompanha o cálculo do índice
+  contagem <- table(INDICADORES$bloco)
+  expect_equal(
+    as.integer(contagem[c(BLOCOS$medida)]),
+    c(5L, 1L, 1L, 3L, 5L, 1L)
+  )
+})
+
+test_that("as consultas do dicionário devolvem o recorte pedido", {
+  # A lista de um bloco mantém a ordem canônica do dicionário
+  bloco5 <- indicadores_do_bloco("bloco5")
+  expect_equal(
+    bloco5$indicador,
+    INDICADORES$indicador[INDICADORES$bloco == "bloco5"]
+  )
+
+  # A ficha de um indicador traz bloco, unidade e sentido do dicionário
+  info <- info_indicador("PRE_NATAL")
+  expect_equal(info$bloco, "bloco3")
+  expect_equal(info$unidade, "%")
+  expect_true(info$protetor)
+  expect_false(info_indicador("tx_homicidio_100mil")$protetor)
+})
+
+test_that("tem_indicadores exige a base reconstruída por completo", {
+  series_fake <- data.frame(codmunres = 1L, ano = 2020L)
+  for (indicador in INDICADORES$indicador) {
+    series_fake[[indicador]] <- 1
+  }
+  expect_true(tem_indicadores(list(series = series_fake)))
+
+  # Faltando uma única coluna, a seção dos indicadores fica oculta
+  series_fake$idhm <- NULL
+  expect_false(tem_indicadores(list(series = series_fake)))
+})
+
+test_that("series_municipio respeita o recorte de colunas pedido", {
+  series_fake <- data.frame(
+    codmunres = c(1L, 1L, 2L),
+    ano = c(2020L, 2021L, 2020L),
+    indice_final = c(50, 60, 70),
+    idhm = c(0.6, 0.7, 0.65)
+  )
+  dados_fake <- list(series = series_fake)
+
+  completo <- series_municipio(dados_fake, 1L)
+  expect_equal(names(completo), c("ano", "indice_final", "idhm"))
+  expect_equal(nrow(completo), 2)
+  expect_true(series_tem_valor(completo))
+  expect_true(series_tem_valor(completo, "idhm"))
+
+  # Colunas que não existem na base não entram no recorte
+  expect_false(series_tem_valor(completo, c("bloco1", "bloco2")))
+  so_idhm <- series_municipio(dados_fake, 1L, colunas = "idhm")
+  expect_equal(names(so_idhm), c("ano", "idhm"))
+
+  # Município fora da base devolve o mesmo desenho de colunas, sem linhas
+  vazio <- series_municipio(dados_fake, 99L)
+  expect_equal(names(vazio), c("ano", "indice_final", "idhm"))
+  expect_false(series_tem_valor(vazio))
+})
+
+test_that("o passo redondo e as casas decimais cobrem cada escala", {
+  expect_equal(passos_do_eixo(30)[1], 10)
+  expect_equal(passos_do_eixo(0.15)[1], 0.05)
+  expect_equal(casas_do_passo(5), 0)
+  expect_equal(casas_do_passo(0.5), 1)
+  expect_equal(casas_do_passo(0.02), 2)
+  # Passos com meio pedem uma casa a mais (1,5 e 2,5)
+  expect_equal(casas_do_passo(2.5), 1)
+  expect_equal(casas_do_passo(15), 0)
+})
+
+test_that("os limites dos indicadores se adaptam à escala", {
+  series_ind <- data.frame(ano = 2020:2022, PRE_NATAL = c(40, 55, 70))
+
+  # A faixa fecha em cinco intervalos redondos, centrados nos dados
+  limites <- limites_indicador(series_ind, "PRE_NATAL")
+  expect_equal(limites$min, 30)
+  expect_equal(limites$max, 80)
+  expect_equal(limites$passo, 10)
+
+  # Uma série constante abre folga em torno do valor (caso do IDHM)
+  constante <- data.frame(ano = 2020:2022, PRE_NATAL = c(60, 60, 60))
+  limites <- limites_indicador(constante, "PRE_NATAL")
+  expect_true(limites$min < 60 && limites$max > 60)
+
+  # Série constante em zero não abre valores negativos (peso <1.500 g pode zerar)
+  zerada <- data.frame(ano = 2020:2022, prop_menor_1500 = c(0, 0, 0))
+  limites <- limites_indicador(zerada, "prop_menor_1500")
+  expect_equal(limites$min, 0)
+  expect_true(limites$max > 0)
+
+  # Faixa estreita de porcentagem não desce abaixo da precisão de uma casa
+  estreita <- data.frame(ano = 2020:2022, DEP_SUS = c(99.6, 99.9, 99.7))
+  limites <- limites_indicador(estreita, "DEP_SUS")
+  expect_gte(limites$passo, 0.1)
+  expect_true(limites$min <= 99.6 && limites$max >= 99.9)
+
+  # Sem valor algum, o eixo fica na faixa neutra de cinco intervalos
+  vazio <- data.frame(ano = 2020:2022, PRE_NATAL = c(NA, NA, NA))
+  expect_equal(
+    limites_indicador(vazio, "PRE_NATAL"),
+    list(min = 0, max = 1, passo = 0.2)
+  )
+
+  # Com comparação, a faixa cobre os dois municípios
+  comparacao <- data.frame(ano = 2020:2022, PRE_NATAL = c(10, 20, 95))
+  limites <- limites_indicador(series_ind, "PRE_NATAL", comparacao)
+  expect_equal(limites$min, 0)
+  expect_equal(limites$max, 100)
+})
+
+test_that("grafico_evolucao_indicador usa a cor do bloco e a escala do indicador", {
+  series_ind <- data.frame(ano = 2020:2022, PRE_NATAL = c(40, 55, 70))
+  grafico <- grafico_evolucao_indicador(series_ind, "PRE_NATAL", nome = "Um (RO)")
+
+  # A série principal usa a cor do bloco do indicador
+  serie <- grafico$x$opts$series[[1]]
+  expect_equal(serie$name, "Um (RO)")
+  expect_equal(serie$itemStyle$color, cor_linha_medida("bloco3"))
+  expect_equal(serie$lineStyle$type, "solid")
+
+  # O eixo Y acompanha a escala própria do indicador, em cinco intervalos
+  expect_equal(grafico$x$opts$yAxis[[1]]$min, 30)
+  expect_equal(grafico$x$opts$yAxis[[1]]$max, 80)
+  expect_equal(grafico$x$opts$yAxis[[1]]$interval, 10)
+
+  # O eixo de porcentagem mostra o sufixo % nos valores
+  formatter_pct <- as.character(grafico$x$opts$yAxis[[1]]$axisLabel$formatter)
+  expect_true(grepl("+ '%'", formatter_pct, fixed = TRUE))
+
+  # O eixo do IDHM usa as três casas do indicador
+  idhm <- data.frame(ano = 2020:2022, idhm = c(0.50, 0.51, 0.52))
+  grafico_idhm <- grafico_evolucao_indicador(idhm, "idhm")
+  formatter_idhm <- as.character(grafico_idhm$x$opts$yAxis[[1]]$axisLabel$formatter)
+  expect_true(grepl("toFixed(3)", formatter_idhm, fixed = TRUE))
+
+  # O tooltip respeita as casas e a unidade configuradas para o indicador
+  expect_true(grepl("toFixed(1)", tooltip_evolucao_js(), fixed = TRUE))
+  expect_true(grepl("toFixed(3)", tooltip_evolucao_js(3), fixed = TRUE))
+  expect_true(grepl("+ '%'", tooltip_evolucao_js(1, "%"), fixed = TRUE))
+
+  # Com comparação, as duas séries aparecem com o tracejado padrão
+  grafico_comp <- grafico_evolucao_indicador(
+    series_ind, "PRE_NATAL",
+    comparacao = series_ind, nome_comparacao = "Dois (RO)"
+  )
+  expect_length(grafico_comp$x$opts$series, 2)
+  expect_equal(grafico_comp$x$opts$series[[2]]$lineStyle$type, c(9, 7))
+  expect_equal(grafico_comp$x$opts$series[[2]]$itemStyle$color, "#FFFFFF")
+})
+
+test_that("o esqueleto dos indicadores reserva os cartões do bloco padrão", {
+  indicadores_esq <- as.character(esqueleto_indicadores())
+  expect_true(grepl("indicadores-grade", indicadores_esq, fixed = TRUE))
+  expect_equal(
+    lengths(regmatches(indicadores_esq, gregexpr('class="indicador-card ', indicadores_esq))),
+    5
+  )
+  expect_equal(
+    lengths(regmatches(indicadores_esq, gregexpr("esqueleto__grafico-margem", indicadores_esq))),
+    5
+  )
+})
+
+test_that("o módulo exibe os indicadores do bloco selecionado", {
+  dados <- dados_ibisma()
+  testthat::skip_if_not(
+    tem_indicadores(dados),
+    "séries prontas sem indicadores (rode data-raw/cria_rda.R)"
+  )
+  principal <- municipio_padrao(dados)
+  municipio <- shiny::reactiveVal(principal)
+  shiny::testServer(
+    mod_como_server,
+    args = list(dados = dados, municipio = municipio),
+    {
+      session$setInputs(
+        municipio = as.character(principal),
+        ano = as.character(max(dados$anos))
+      )
+
+      # O bloco padrão é o Social, com os cinco indicadores em cartões
+      cartoes <- as.character(output$indicadores$html)
+      for (indicador in indicadores_do_bloco("bloco1")$indicador) {
+        expect_true(grepl(paste0("indicador_", indicador), cartoes, fixed = TRUE))
+      }
+
+      # Trocando o bloco, a grade passa a trazer os indicadores do bloco pedido
+      session$setInputs(bloco = "bloco3")
+      cartoes <- as.character(output$indicadores$html)
+      expect_true(grepl("indicador_PRE_NATAL", cartoes, fixed = TRUE))
+      expect_false(grepl("indicador_idhm", cartoes, fixed = TRUE))
+
+      # O gráfico do indicador usa a escala própria do indicador
+      opcoes <- jsonlite::fromJSON(
+        output$indicador_PRE_NATAL,
+        simplifyVector = FALSE
+      )$x$opts
+      esperados <- limites_indicador(series_municipio(dados, principal), "PRE_NATAL")
+      expect_equal(opcoes$yAxis[[1]]$min, esperados$min)
+      expect_equal(opcoes$yAxis[[1]]$max, esperados$max)
+    }
+  )
 })
