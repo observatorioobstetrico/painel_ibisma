@@ -98,7 +98,7 @@ body, .content-wrapper, .main-header, .main-sidebar {
 /* Definindo variáveis adicionais de tipografia e espaçamento do painel */
 :root {
   --fonte-numero-destaque-size: 3.25rem;
-  --espaco-secao: 2rem;
+  --espaco-secao: 2.5rem;
   --altura-navbar: 4.75rem;
 }
 
@@ -137,6 +137,8 @@ body, .content-wrapper, .main-header, .main-sidebar {
   /* Cinzas da silhueta de referência das pétalas */
   --cor-silhueta: #F1F3F7;
   --cor-silhueta-traco: #D8DCE3;
+  /* Cinza dos trilhos das barras e dos rankings */
+  --cor-trilho: #E4E8EE;
 
   /* Cores dos esqueletos de carregamento */
   --cor-esqueleto-rgb: 224 233 242;
@@ -332,17 +334,6 @@ input:focus-visible,
 .secao-cabecalho {
   max-width: 62rem;
   margin-bottom: 1.25rem;
-}
-
-/* Estilizando o rótulo curto acima do título */
-.secao-eyebrow {
-  display: inline-block;
-  font-size: var(--fonte-media-size);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--cor-azul-claro);
-  margin-bottom: 0.4rem;
 }
 
 /* Estilizando o título principal de cada seção */
@@ -729,8 +720,6 @@ input:focus-visible,
   color: var(--cor-texto-suave);
   font-size: var(--fonte-pequena-size);
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .ss-content .ss-list .ss-optgroup .ss-optgroup-label .ss-optgroup-label-text {
@@ -861,8 +850,6 @@ input:focus-visible,
 .tooltip-mapa__rotulo {
   font-size: var(--fonte-pequena-size);
   color: var(--cor-texto-suave);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 /* Destacando o valor no tooltip */
@@ -895,8 +882,6 @@ input:focus-visible,
   display: block;
   font-size: var(--fonte-pequena-size);
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--cor-texto-suave);
   margin-bottom: 0.45rem;
 }
@@ -1113,10 +1098,8 @@ input:focus-visible,
 
 /* Estilizando o rótulo das métricas */
 .metrica-rotulo {
-  font-size: var(--fonte-pequena-size);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: var(--fonte-aviso-size);
+  font-weight: 600;
   color: var(--cor-texto-suave);
 }
 
@@ -1150,38 +1133,100 @@ input:focus-visible,
   flex-direction: column;
 }
 
-/* Centralizando o leque de pétalas dentro do palco */
+/* Centralizando o estado vazio dentro do palco */
 .perfil-palco__grafico {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* Explicando as pétalas logo abaixo das métricas do município */
-.petalas-caption {
-  align-self: flex-start;
-  max-width: 52rem;
-  margin: 0.5rem 0 1rem 0;
-  font-size: var(--fonte-media-size);
-  color: var(--cor-texto-suave);
-  text-align: left;
+/* Alinhando o título da linha e o botão de informação */
+.perfil-palco__cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 1.25rem;
+  margin: 1rem 0 0 0;
 }
 
-/* Centralizando o bloco do índice acima das pétalas */
-.perfil-indice {
+/* Nomeando a linha com as pétalas e o resultado por bloco */
+.perfil-palco__titulo {
+  margin: 0;
+  font-size: var(--fonte-grande-size);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--cor-azul-escuro);
+}
+
+/* Estilizando o botão de informação ao lado do título */
+.perfil-palco__info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 1;
+  font-size: var(--fonte-media-size);
+  color: rgb(var(--cor-azul-escuro-rgb) / 0.3);
+  cursor: pointer;
+}
+
+.perfil-palco__info:hover,
+.perfil-palco__info:focus-visible {
+  color: var(--cor-azul-claro);
+}
+
+.perfil-palco__info:focus-visible {
+  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* Dividindo as pétalas e as barras em duas colunas na visão isolada */
+.perfil-palco__graficos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Mantendo apenas as pétalas quando a comparação está ativa */
+.perfil-palco__graficos--petalas {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Organizando cada coluna de gráfico do palco */
+.perfil-palco__coluna {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 1rem;
+  min-width: 0;
+}
+
+/* Esticando a coluna das barras para ocupar a largura disponível */
+.perfil-palco__coluna--barras {
+  align-items: stretch;
+  justify-content: center;
+}
+
+/* Alinhando o bloco do índice à esquerda acima dos gráficos */
+.perfil-indice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 1.25rem;
+  text-align: left;
 }
 
 /* Nomeando explicitamente o valor em destaque no índice */
 .perfil-indice__rotulo {
   display: block;
-  font-size: var(--fonte-pequena-size);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: var(--fonte-media-size);
+  font-weight: 600;
   color: var(--cor-texto-suave);
   margin-bottom: 0.25rem;
 }
@@ -1193,11 +1238,6 @@ input:focus-visible,
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 0.35rem;
-}
-
-/* Centralizando a linha do valor quando ela fica no placar */
-.perfil-indice__linha--centro {
-  justify-content: center;
 }
 
 /* Dando destaque ao número do Índice VIDAS */
@@ -1218,45 +1258,244 @@ input:focus-visible,
 /* Explicando o percentil logo abaixo do valor */
 .perfil-indice__frase {
   font-size: var(--fonte-media-size);
-  color: var(--cor-texto-suave);
+  font-weight: 500;
+  color: var(--cor-azul-escuro);
   margin: 0;
 }
 
-/* Limitando e centralizando a frase do percentil dentro do índice */
+/* Limitando a frase do percentil à largura de leitura do índice */
 .perfil-indice .perfil-indice__frase {
-  max-width: 30rem;
-  margin: 0.35rem auto 0 auto;
+  max-width: 34rem;
+  margin: 0.35rem 0 0 0;
 }
 
-/* Distribuindo os três rankings na base do palco */
+/* Desenhando a régua de categorias do índice */
+.perfil-indice__regua {
+  width: 100%;
+  max-width: 32rem;
+  margin-top: 0.9rem;
+}
+
+/* Posicionando as faixas e o marcador no mesmo trilho */
+.perfil-indice__trilho {
+  position: relative;
+  height: 0.5rem;
+  margin: 0 0.15rem;
+}
+
+/* Unindo as cinco faixas com as pontas arredondadas e um respiro entre elas */
+.perfil-indice__faixas {
+  display: flex;
+  height: 100%;
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.perfil-indice__faixa {
+  flex: 1 1 0;
+}
+
+/* Marcando a posição do município com uma agulha sobre a régua */
+.perfil-indice__marcador {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 1rem;
+  border-radius: 999px;
+  background-color: var(--cor-roxo-vidas);
+  box-shadow: 0 0 0 2px var(--cor-branco);
+  transform: translate(-50%, -50%);
+}
+
+/* Rotulando os extremos da régua de categorias */
+.perfil-indice__extremos {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+}
+
+/* Indicando que a chip da categoria abre a régua do índice */
+.perfil-indice__chip {
+  cursor: pointer;
+}
+
+.perfil-indice__chip:focus-visible {
+  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
+  outline-offset: 2px;
+}
+
+/* Distribuindo os três rankings logo abaixo do valor do índice */
 .perfil-rankings {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: end;
-  gap: 1rem 2rem;
+  align-items: start;
+  gap: 1.25rem 2rem;
   margin-top: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-/* Mantendo rótulo e valor de cada ranking em uma única linha */
-/* Assim um texto maior não muda a altura nem desloca os elementos seguintes */
-.perfil-rankings .metrica-rotulo,
-.perfil-rankings .metrica-valor {
+/* Empilhando rótulo, valor, trilho e extremos de cada ranking */
+.perfil-rankings__item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Estilizando o rótulo de cada ranking */
+.perfil-rankings__rotulo {
+  font-size: var(--fonte-aviso-size);
+  font-weight: 600;
+  color: var(--cor-texto-suave);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Alinhando cada ranking à sua coluna do palco */
-.perfil-rankings__item--macro {
+/* Mantendo a posição em destaque e o total em tamanho menor */
+.perfil-rankings__valor {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: var(--fonte-grande-size);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--cor-azul-escuro);
+}
+
+.perfil-rankings__posicao sup {
+  top: -0.35em;
+  font-size: 0.55em;
+  font-weight: 700;
+}
+
+.perfil-rankings__total {
+  font-size: var(--fonte-media-size);
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+/* Desenhando o trilho do ranking, do pior ao melhor */
+.perfil-rankings__trilho {
+  position: relative;
+  height: 4px;
+  margin: 0.65rem 0.25rem 0.35rem;
+  border-radius: 999px;
+  background-color: var(--cor-trilho);
+}
+
+/* Ampliando a área de hover do trilho sem aumentar a linha visível */
+.perfil-rankings__trilho::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 14px;
+  transform: translateY(-50%);
+}
+
+/* Dando visibilidade ao foco por teclado no trilho interativo */
+.perfil-rankings__trilho:focus-visible {
+  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
+  outline-offset: 4px;
+}
+
+/* Marcando a posição do município no trilho do ranking */
+.perfil-rankings__ponto {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--cor-roxo-vidas);
+  box-shadow: 0 0 0 2px var(--cor-branco);
+  transform: translate(-50%, -50%);
+}
+
+/* Rotulando os extremos do trilho do ranking */
+.perfil-rankings__extremos {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
+}
+
+/* Alinhando cada ranking à esquerda da sua coluna do palco */
+.perfil-rankings__item--macro,
+.perfil-rankings__item--uf,
+.perfil-rankings__item--brasil {
   text-align: left;
 }
 
-.perfil-rankings__item--uf {
-  text-align: center;
+/* ------------------------------------------- resultado por bloco */
+
+/* Alinhando as barras do resultado por bloco */
+.resultado-blocos {
+  width: 100%;
 }
 
-.perfil-rankings__item--brasil {
-  text-align: right;
+/* Dando ritmo vertical entre as barras dos blocos */
+.resultado-blocos__linha {
+  margin-bottom: 1rem;
+}
+
+.resultado-blocos__linha:last-child {
+  margin-bottom: 0;
+}
+
+/* Dando visibilidade ao foco por teclado nas barras com tooltip */
+.resultado-blocos__trilho:focus-visible {
+  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
+  outline-offset: 2px;
+}
+
+/* Alinhando o nome do bloco e o valor acima da barra */
+.resultado-blocos__cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.resultado-blocos__nome {
+  min-width: 0;
+  font-size: var(--fonte-media-size);
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+.resultado-blocos__valor {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: var(--fonte-media-size);
+  font-weight: 700;
+  color: var(--cor-azul-escuro);
+}
+
+/* Explicando a escala do valor da barra em um texto mais discreto */
+.resultado-blocos__escala {
+  font-size: var(--fonte-pequena-size);
+  font-weight: 500;
+  color: var(--cor-texto-suave);
+}
+
+/* Preenchendo a barra na cor do bloco e deixando o restante em cinza */
+.resultado-blocos__trilho {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background-color: var(--cor-trilho);
+}
+
+.resultado-blocos__preenchimento {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
 }
 
 /* Aproveitando a largura do palco para ampliar o leque de pétalas */
@@ -1591,10 +1830,8 @@ input:focus-visible,
 /* Marcando a hierarquia do palco principal e do comparado */
 .palco-rotulo {
   display: inline-block;
-  font-size: var(--fonte-pequena-size);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: var(--fonte-media-size);
+  font-weight: 600;
   color: var(--cor-texto-suave);
   margin-bottom: 0.35rem;
 }
@@ -1654,33 +1891,24 @@ input:focus-visible,
   r: 18;
 }
 
-/* Listando os nomes dos blocos com seus marcadores de cor abaixo do leque */
-.petalas-legenda {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.35rem 1.1rem;
-  margin-top: 0.5rem;
-}
-
-.petalas-legenda__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+/* Nomeando os blocos diretamente ao lado das pétalas */
+.rotulo-petala {
+  font-family: 'Source Sans Pro', system-ui, sans-serif;
   font-size: var(--fonte-pequena-size);
-  color: var(--cor-texto-suave);
-}
-
-.petalas-legenda__cor {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex: 0 0 auto;
+  font-weight: 600;
+  fill: var(--cor-texto-suave);
+  pointer-events: none;
 }
 
 /* Deixando a seta da tooltip branca, igual ao fundo do cartão */
 .tooltip.tooltip-ibisma {
   --bs-tooltip-bg: var(--cor-branco);
+  pointer-events: none;
+}
+
+/* Animando a abertura e o fechamento das tooltips ancoradas */
+.tooltip.tooltip-ibisma:not(.tooltip-cursor) {
+  transition: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Removendo a transparência padrão da tooltip */
@@ -1699,6 +1927,55 @@ input:focus-visible,
   font-family: 'Source Sans Pro', system-ui, sans-serif;
   font-size: var(--fonte-media-size);
   text-align: left;
+}
+
+/* Alargando a tooltip que carrega a régua do índice e a explicação das pétalas */
+.tooltip.tooltip-ibisma--larga {
+  --bs-tooltip-max-width: 26rem;
+  max-width: 26rem;
+}
+
+.tooltip.tooltip-ibisma--larga .tooltip-inner {
+  max-width: 26rem;
+}
+
+.tooltip.tooltip-ibisma--larga .perfil-indice__regua {
+  width: 18rem;
+  max-width: 70vw;
+  margin: 0;
+}
+
+/* Fazendo a tooltip das pétalas e barras seguir o cursor como no echarts */
+.tooltip-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  --bs-tooltip-max-width: 18rem;
+  max-width: 18rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 0.3s;
+}
+
+/* Impedindo que a tooltip bloqueie o hover dos elementos atrás dela */
+.tooltip-cursor,
+.tooltip-cursor * {
+  pointer-events: none !important;
+}
+
+.tooltip-cursor.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s;
+}
+
+/* Posicionando sem animação na primeira aparição de cada tooltip */
+.tooltip-cursor.sem-transicao {
+  transition: none;
 }
 
 /* Alinhando os textos internos do cartão da pétala */
@@ -1728,11 +2005,16 @@ input:focus-visible,
   gap: 1rem;
 }
 
+/* Agrupando o valor e a chip de categoria na mesma linha */
+.tooltip-petala__resultado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .tooltip-petala__rotulo {
   font-size: var(--fonte-pequena-size);
   color: var(--cor-texto-suave);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .tooltip-petala__valor {
@@ -2062,9 +2344,10 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   line-height: 0;
 }
 
-/* Mantendo a altura de linha dos nomes na legenda das pétalas */
-.esqueleto--petalas .petalas-legenda__item {
-  min-height: 1.5em;
+/* Dando ritmo às barras neutras do resultado por bloco */
+.esqueleto--barras .resultado-blocos__trilho {
+  display: flex;
+  align-items: center;
 }
 
 /* Tracejando as guias e preenchendo as pétalas sem qualquer dado */
@@ -2234,8 +2517,6 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 .rodape-titulo {
   font-size: var(--fonte-pequena-size);
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: rgb(var(--cor-branco-rgb) / 0.72);
   margin: 0;
 }
@@ -2361,6 +2642,11 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
   .rodape-logo {
     height: 1.75rem;
+  }
+
+  /* Empilhando as pétalas e as barras em tela estreita */
+  .perfil-palco__graficos {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* Passando os rankings para duas colunas, com a macrorregião na linha toda */

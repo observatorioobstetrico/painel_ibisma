@@ -315,8 +315,14 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
 
 /* Inicializando as tooltips das pétalas e dos campos territoriais cortados */
 (function () {
-  /* Reunindo pétalas e campos que revelam o próprio texto no hover */
+  /* Reunindo os seletores das tooltips ricas e dos campos com texto próprio */
   var SELETOR_PETALAS = '.grupo-petala[data-bs-toggle="tooltip"]';
+  var SELETOR_CHIPS = '.perfil-indice__chip[data-bs-toggle="tooltip"]';
+  var SELETOR_INFO = '.perfil-palco__info[data-bs-toggle="tooltip"]';
+  var SELETOR_BARRAS = '.resultado-blocos__trilho[data-bs-toggle="tooltip"]';
+  var SELETOR_RANKINGS = '.perfil-rankings__trilho[data-bs-toggle="tooltip"]';
+  var SELETOR_CURSOR = SELETOR_PETALAS + ", " + SELETOR_BARRAS + ", " + SELETOR_RANKINGS;
+  var SELETOR_ANCORADAS = SELETOR_CHIPS + ", " + SELETOR_INFO;
   var SELETOR_METRICAS = '.metrica-tooltip[data-tooltip-texto]';
 
   /* Executando a função imediatamente quando a página já estiver pronta */
@@ -339,23 +345,145 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       delay: { show: 80, hide: 40 }
     };
     if (rico) {
-      /* As pétalas usam HTML com cores gerado pelo servidor */
+      /* A chip do índice usa HTML com as cores gerado pelo servidor */
       opcoes.html = true;
       /* A sanitização removeria os estilos em linha com as cores da dimensão */
       opcoes.sanitize = false;
+      /* A régua do índice usa uma tooltip mais larga */
+      if (el.dataset.tooltipLarga) {
+        opcoes.customClass += " tooltip-ibisma--larga";
+      }
     } else {
       /* Os campos territoriais usam o texto completo guardado em data */
       opcoes.title = el.getAttribute("data-tooltip-texto");
     }
+    /* Aceitando clique na chip do índice além do hover e do foco */
+    if (el.dataset.tooltipGatilho) {
+      opcoes.trigger = el.dataset.tooltipGatilho;
+    }
     new bootstrap.Tooltip(el, opcoes);
   }
 
-  /* Ativando as tooltips das pétalas, que nunca são cortadas */
-  function inicializarPetalas() {
-    document.querySelectorAll(SELETOR_PETALAS).forEach(function (el) {
+  /* Ativando as tooltips ancoradas da chip e do botão de informação */
+  function inicializarTooltipsRicas() {
+    document.querySelectorAll(SELETOR_ANCORADAS).forEach(function (el) {
       if (el.dataset.tooltipIniciado) return;
       el.dataset.tooltipIniciado = "sim";
       criarTooltip(el, true);
+    });
+  }
+
+  /* Guardando a tooltip única que acompanha o cursor */
+  var tooltipCursor = null;
+  var alvoCursor = null;
+  var esconderCursor = null;
+
+  /* Criando a tooltip única quando ela ainda não existir */
+  function garantirTooltipCursor() {
+    if (tooltipCursor) return tooltipCursor;
+    tooltipCursor = document.createElement("div");
+    tooltipCursor.className = "tooltip tooltip-ibisma tooltip-cursor";
+    tooltipCursor.setAttribute("role", "tooltip");
+    tooltipCursor.innerHTML = '<div class="tooltip-inner"></div>';
+    document.body.appendChild(tooltipCursor);
+    return tooltipCursor;
+  }
+
+  /* Posicionando a tooltip perto do cursor, sem sair da janela */
+  function posicionarTooltipCursor(x, y, semTransicao) {
+    var tip = garantirTooltipCursor();
+    var margem = 12;
+    var deslocamento = 16;
+    var largura = tip.offsetWidth;
+    var altura = tip.offsetHeight;
+    var esquerda = x + deslocamento;
+    var topo = y + deslocamento;
+    if (esquerda + largura > window.innerWidth - margem) {
+      esquerda = x - largura - deslocamento;
+    }
+    if (topo + altura > window.innerHeight - margem) {
+      topo = y - altura - deslocamento;
+    }
+    var posicao =
+      "translate(" + Math.round(Math.max(margem, esquerda)) + "px, " +
+      Math.round(Math.max(margem, topo)) + "px)";
+    if (semTransicao) {
+      /* Colocando a tooltip no ponto do cursor sem deslizar desde o canto */
+      tip.classList.add("sem-transicao");
+      tip.style.transform = posicao;
+      tip.offsetHeight;
+      tip.classList.remove("sem-transicao");
+    } else {
+      tip.style.transform = posicao;
+    }
+  }
+
+  /* Mostrando a tooltip do elemento na posição informada */
+  function mostrarTooltipCursor(el, x, y) {
+    var html = el.getAttribute("data-tooltip-html");
+    if (!html) return;
+    clearTimeout(esconderCursor);
+    var tip = garantirTooltipCursor();
+    tip.querySelector(".tooltip-inner").innerHTML = html;
+    alvoCursor = el;
+    /* Posicionando sem animação apenas quando a tooltip está fechada */
+    posicionarTooltipCursor(x, y, !tip.classList.contains("is-visible"));
+    /* Forçando o navegador a calcular o tamanho antes da transição */
+    tip.offsetHeight;
+    tip.classList.add("is-visible");
+  }
+
+  /* Escondendo a tooltip com a transição e limpando o conteúdo depois */
+  function esconderTooltipCursor() {
+    if (!alvoCursor) return;
+    var tip = garantirTooltipCursor();
+    alvoCursor = null;
+    tip.classList.remove("is-visible");
+    clearTimeout(esconderCursor);
+    esconderCursor = setTimeout(function () {
+      if (!alvoCursor) tip.querySelector(".tooltip-inner").innerHTML = "";
+    }, 350);
+  }
+
+  /* Ativando a tooltip que acompanha o cursor nas pétalas e nas barras */
+  function inicializarTooltipsCursor() {
+    /* Escondendo a tooltip quando o elemento em foco deixou a página */
+    if (alvoCursor && !document.body.contains(alvoCursor)) {
+      esconderTooltipCursor();
+    }
+    document.querySelectorAll(SELETOR_CURSOR).forEach(function (el) {
+      if (el.dataset.tooltipCursor) return;
+      var html = el.getAttribute("title");
+      if (!html) return;
+      /* Removendo o título nativo para o navegador não abrir outra tooltip */
+      el.removeAttribute("title");
+      el.setAttribute("data-tooltip-html", html);
+      el.dataset.tooltipCursor = "sim";
+
+      el.addEventListener("mouseenter", function (evento) {
+        mostrarTooltipCursor(el, evento.clientX, evento.clientY);
+      });
+      el.addEventListener("mousemove", function (evento) {
+        if (alvoCursor === el) {
+          posicionarTooltipCursor(evento.clientX, evento.clientY, false);
+        }
+      });
+      el.addEventListener("mouseleave", function () {
+        if (alvoCursor === el) esconderTooltipCursor();
+      });
+      el.addEventListener("focus", function () {
+        /* Mantendo a posição do cursor quando o foco veio de um clique */
+        if (alvoCursor === el) return;
+        var area = el.getBoundingClientRect();
+        mostrarTooltipCursor(
+          el,
+          area.left + area.width / 2,
+          area.top + area.height / 2
+        );
+      });
+      el.addEventListener("blur", function () {
+        if (alvoCursor === el) esconderTooltipCursor();
+      });
     });
   }
 
@@ -387,9 +515,20 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   }
 
   quandoPronto(function () {
-    inicializarPetalas();
+    inicializarTooltipsRicas();
+    inicializarTooltipsCursor();
     atualizarMetricas();
     window.addEventListener("resize", agendarAtualizacao);
+
+    /* Fechando as tooltips ancoradas quando o clique acontece fora delas */
+    document.addEventListener("click", function (evento) {
+      if (!window.bootstrap || !bootstrap.Tooltip) return;
+      document.querySelectorAll(SELETOR_ANCORADAS).forEach(function (el) {
+        if (el.contains(evento.target)) return;
+        var instancia = bootstrap.Tooltip.getInstance(el);
+        if (instancia) instancia.hide();
+      });
+    });
 
     /* Reavaliando depois que a fonte institucional terminar de carregar */
     if (document.fonts && document.fonts.ready) {
@@ -400,20 +539,28 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
 
     /* Reinicializando sempre que o Shiny inserir novos elementos na página */
     var observador = new MutationObserver(function (mutacoes) {
+      /* Escondendo a tooltip quando o elemento em foco saiu da página */
+      if (alvoCursor && !document.body.contains(alvoCursor)) {
+        esconderTooltipCursor();
+      }
       for (var i = 0; i < mutacoes.length; i++) {
         var adicionados = mutacoes[i].addedNodes;
         for (var j = 0; j < adicionados.length; j++) {
           var no = adicionados[j];
           if (no.nodeType !== 1) continue;
-          var temPetala =
-            (no.matches && no.matches(SELETOR_PETALAS)) ||
-            (no.querySelector && no.querySelector(SELETOR_PETALAS));
+          var temCursor =
+            (no.matches && no.matches(SELETOR_CURSOR)) ||
+            (no.querySelector && no.querySelector(SELETOR_CURSOR));
+          var temRica =
+            (no.matches && no.matches(SELETOR_ANCORADAS)) ||
+            (no.querySelector && no.querySelector(SELETOR_ANCORADAS));
           var temMetrica =
             (no.matches && no.matches(SELETOR_METRICAS)) ||
             (no.querySelector && no.querySelector(SELETOR_METRICAS));
-          if (temPetala) inicializarPetalas();
+          if (temCursor) inicializarTooltipsCursor();
+          if (temRica) inicializarTooltipsRicas();
           if (temMetrica) atualizarMetricas();
-          if (temPetala || temMetrica) return;
+          if (temCursor || temRica || temMetrica) return;
         }
       }
     });

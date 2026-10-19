@@ -38,36 +38,36 @@ COR_LINHA_SOCIAL <- "#D99E00"
 CATEGORIAS <- c("Muito baixo", "Baixo", "Médio", "Alto", "Muito alto")
 
 # Definindo as rampas de cinco tons de cada medida, na ordem das categorias
-# O tom escuro marca o menor Índice VIDAS, que é a prioridade de atenção
-# A cor de identificação fica no tom central dos blocos e no tom mais baixo do índice
+# O tom escuro marca o maior Índice VIDAS, que representa as melhores condições
+# A cor de identificação fica no tom central dos blocos e no tom mais alto do índice
 ## Usada em: fct_cores.R (cores de categoria e misturas), mod_onde.R (legenda) e testes das rampas.
 PALETAS <- list(
   indice_final = stats::setNames(
-    c(COR_VIDAS, "#6B35A3", "#915EC4", "#B592D6", "#D5C2E8"),
+    c("#D5C2E8", "#B592D6", "#915EC4", "#6B35A3", COR_VIDAS),
     CATEGORIAS
   ),
   bloco1 = stats::setNames(
-    c("#655F2B", "#AD921D", "#FAC80F", "#FCD857", "#FDEAA4"),
+    c("#FDEAA4", "#FCD857", "#FAC80F", "#AD921D", "#655F2B"),
     CATEGORIAS
   ),
   bloco2 = stats::setNames(
-    c("#1F5B3C", "#2F8B3C", "#41BE3C", "#7AD276", "#B7E6B5"),
+    c("#B7E6B5", "#7AD276", "#41BE3C", "#2F8B3C", "#1F5B3C"),
     CATEGORIAS
   ),
   bloco3 = stats::setNames(
-    c("#194F86", "#2576C1", COR_AZUL_CLARO, "#70BCFF", "#B1DBFF"),
+    c("#B1DBFF", "#70BCFF", COR_AZUL_CLARO, "#2576C1", "#194F86"),
     CATEGORIAS
   ),
   bloco4 = stats::setNames(
-    c("#5D3437", "#9E4532", "#E4572E", "#EC896D", "#F5BFB0"),
+    c("#F5BFB0", "#EC896D", "#E4572E", "#9E4532", "#5D3437"),
     CATEGORIAS
   ),
   bloco5 = stats::setNames(
-    c("#123562", "#184780", "#1E5AA0", "#628CBC", "#AAC0DB"),
+    c("#AAC0DB", "#628CBC", "#1E5AA0", "#184780", "#123562"),
     CATEGORIAS
   ),
   bloco6 = stats::setNames(
-    c("#065264", "#037A84", "#00A6A6", "#4CC1C1", "#9EDDDD"),
+    c("#9EDDDD", "#4CC1C1", "#00A6A6", "#037A84", "#065264"),
     CATEGORIAS
   )
 )

@@ -5,15 +5,29 @@
 # =============================================================================
 
 # Definindo os ângulos do leque simétrico em que as seis pétalas são distribuídas
-ANGULOS_PETALAS <- c(-65, -39, -13, 13, 39, 65)
+# Abrindo o leque até perto da horizontal para reduzir a sobreposição entre pétalas
+ANGULOS_PETALAS <- c(-80, -48, -16, 16, 48, 80)
 
 # Definindo o centro e o raio máximo do leque no sistema do viewBox
 PETALAS_CX <- 250
 PETALAS_CY <- 275
 PETALAS_RAIO <- 185
 
+# Definindo o raio do disco azul escuro que sustenta o leque
+PETALAS_RAIO_CENTRO <- 6
+
 # Definindo o comprimento do caminho base da pétala no sistema do viewBox
 PETALAS_COMPRIMENTO <- 170
+
+# Definindo os rótulos exibidos diretamente junto de cada pétala
+ROTULOS_PETALAS <- c(
+  bloco1 = "Social",
+  bloco2 = "Planejamento\nReprodutivo",
+  bloco3 = "Pré-natal",
+  bloco4 = "Parto",
+  bloco5 = "Sistema de Saúde",
+  bloco6 = "Clima"
+)
 
 # Definindo o caminho base da pétala, compartilhado pela silhueta e pela forma real
 PETALAS_CAMINHO <- sprintf(
@@ -24,8 +38,21 @@ PETALAS_CAMINHO <- sprintf(
 # Definindo a escala da pétala na extensão máxima, usada pela silhueta de referência
 PETALAS_ESCALA_MAXIMA <- PETALAS_RAIO / PETALAS_COMPRIMENTO
 
-# Definindo a área visível do desenho, cortando as sobras de topo e laterais
-PETALAS_VIEWBOX <- "45 60 410 236"
+# Definindo a área visível do desenho, com espaço para os rótulos das pétalas
+PETALAS_VIEWBOX <- "0 45 500 260"
+
+#' Definindo uma função que escolhe o rótulo de uma pétala
+#'
+#' @param medida Identificador do bloco ("bloco1"..."bloco6").
+#' @param nome Nome completo do bloco, usado quando não houver rótulo próprio.
+#' @return Texto exibido junto da pétala, com quebras de linha quando houver.
+#' Usada em: fct_petalas.R (petala_svg).
+#' @noRd
+rotulo_petala <- function(medida, nome) {
+  # Buscando o rótulo do bloco e mantendo o nome completo como reserva
+  rotulo <- unname(ROTULOS_PETALAS[as.character(medida)])
+  ifelse(is.na(rotulo), as.character(nome), rotulo)
+}
 
 #' Definindo uma função que monta o conteúdo HTML do tooltip de uma pétala
 #'
@@ -36,10 +63,10 @@ PETALAS_VIEWBOX <- "45 60 410 236"
 #' @param total_nac Total de municípios ranqueados.
 #' @param medida Identificador do bloco que define a cor da dimensão.
 #' @return Texto HTML pronto para o tooltip do Bootstrap.
-#' Usada em: fct_petalas.R (petala_svg).
+#' Usada em: fct_petalas.R (petala_svg) e fct_perfil.R (grafico_barras_blocos).
 #' @noRd
 tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
-  # Montando o cartão com nome, valor, ranking e selo de categoria
+  # Montando o cartão com nome, valor, categoria e ranking
   # O marcador ao lado do nome e o selo usam a rampa de cor da dimensão
   paste0(
     '<div class="tooltip-petala" style="--cor-medida:', cor_medida(medida), ';">',
@@ -48,14 +75,17 @@ tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
     "</div>",
     '<div class="tooltip-petala__linha">',
     '<span class="tooltip-petala__rotulo">Valor</span>',
+    '<span class="tooltip-petala__resultado">',
     '<span class="tooltip-petala__valor">', formatar_numero(valor), "</span>",
+    # Colocando o selo na mesma linha do valor para deixar clara a relação
+    badge_categoria(categoria, cor = cor_categoria(categoria, medida)),
+    "</span>",
     "</div>",
     '<div class="tooltip-petala__linha">',
-    '<span class="tooltip-petala__rotulo">Prioridade</span>',
+    '<span class="tooltip-petala__rotulo">Ranking</span>',
     '<span class="tooltip-petala__valor">',
     rotulo_posicao(pos_nac, total_nac),
     "</span></div>",
-    badge_categoria(categoria, cor = cor_categoria(categoria, medida)),
     "</div>"
   )
 }
@@ -90,6 +120,31 @@ petala_silhueta_svg <- function(i) {
   )
 }
 
+#' Definindo uma função que monta a guia pontilhada de uma pétala
+#'
+#' @param i Índice do bloco.
+#' @return Elemento HTML com a linha guia da pétala.
+#' Usada em: fct_petalas.R (grafico_petalas).
+#' @noRd
+guia_petala_svg <- function(i) {
+  # Calculando a ponta da guia na escala máxima do leque
+  angulo <- ANGULOS_PETALAS[i]
+  rad <- (angulo - 90) * (pi / 180)
+  ponta_x <- round(PETALAS_CX + PETALAS_RAIO * cos(rad), 1)
+  ponta_y <- round(PETALAS_CY + PETALAS_RAIO * sin(rad), 1)
+
+  htmltools::tags$line(
+    class = "guia-petala",
+    x1 = PETALAS_CX,
+    y1 = PETALAS_CY,
+    x2 = ponta_x,
+    y2 = ponta_y,
+    stroke = "#E2E5EA",
+    `stroke-width` = 1.5,
+    `stroke-dasharray` = "2,3"
+  )
+}
+
 #' Definindo uma função que monta uma pétala individual do gráfico
 #'
 #' @param i Índice do bloco.
@@ -114,7 +169,46 @@ petala_svg <- function(i, blocos) {
   ponta_x <- round(PETALAS_CX + PETALAS_RAIO * cos(rad), 1)
   ponta_y <- round(PETALAS_CY + PETALAS_RAIO * sin(rad), 1)
 
-  # Montando o grupo com guia, pétala, valor e tooltip
+  # Posicionando o rótulo do bloco um pouco além do disco do valor
+  rotulo_raio <- PETALAS_RAIO + 25
+  rotulo_x <- round(PETALAS_CX + rotulo_raio * cos(rad), 1)
+  rotulo_y <- round(PETALAS_CY + rotulo_raio * sin(rad), 1)
+  # Alinhando o rótulo para fora nos blocos laterais e ao centro nos demais
+  rotulo_ancora <- if (angulo > 30) "start" else if (angulo < -30) "end" else "middle"
+
+  # Quebrando o rótulo em linhas para os blocos com nomes longos
+  linhas_rotulo <- strsplit(
+    rotulo_petala(blocos$medida[i], nome), "\n", fixed = TRUE
+  )[[1]]
+
+  # Centralizando as linhas seguintes em relação à primeira linha do rótulo
+  ancoras_rotulo <- rep(rotulo_ancora, length(linhas_rotulo))
+  deslocamentos_rotulo <- rep("0", length(linhas_rotulo))
+  if (length(linhas_rotulo) > 1) {
+    # Estimando a largura da primeira linha em em para achar o centro do bloco
+    largura_em <- nchar(linhas_rotulo[1]) * 0.52
+    ancoras_rotulo[-1] <- "middle"
+    deslocamentos_rotulo[-1] <- paste0(
+      if (rotulo_ancora == "start") largura_em / 2 else -largura_em / 2,
+      "em"
+    )
+  }
+
+  tspans_rotulo <- lapply(seq_along(linhas_rotulo), function(j) {
+    htmltools::tags$tspan(
+      x = rotulo_x,
+      dx = deslocamentos_rotulo[j],
+      dy = if (j == 1) {
+        if (length(linhas_rotulo) > 1) "-0.6em" else "0"
+      } else {
+        "1.2em"
+      },
+      `text-anchor` = ancoras_rotulo[j],
+      linhas_rotulo[j]
+    )
+  })
+
+  # Montando o grupo com guia, pétala, valor, rótulo e tooltip
   htmltools::tags$g(
     class = "grupo-petala",
     `data-bs-toggle` = "tooltip",
@@ -123,16 +217,6 @@ petala_svg <- function(i, blocos) {
     title = tooltip_petala(
       nome, blocos$valor[i], blocos$categoria[i],
       blocos$pos_nac[i], blocos$total_nac[i], blocos$medida[i]
-    ),
-    # Linha guia pontilhada que sustenta a escala da pétala
-    htmltools::tags$line(
-      x1 = PETALAS_CX,
-      y1 = PETALAS_CY,
-      x2 = ponta_x,
-      y2 = ponta_y,
-      stroke = "#E2E5EA",
-      `stroke-width` = 1.5,
-      `stroke-dasharray` = "2,3"
     ),
     # Forma da pétala rotacionada e escalada pelo valor do bloco
     htmltools::tags$path(
@@ -163,6 +247,15 @@ petala_svg <- function(i, blocos) {
       `font-weight` = "700",
       `font-family` = "Source Sans Pro, system-ui, sans-serif",
       formatar_numero(valor)
+    ),
+    # Nome do bloco posicionado fora do disco, sem a legenda abaixo
+    htmltools::tags$text(
+      x = rotulo_x,
+      y = rotulo_y,
+      `text-anchor` = rotulo_ancora,
+      `dominant-baseline` = "middle",
+      class = "rotulo-petala",
+      tspans_rotulo
     )
   )
 }
@@ -190,6 +283,11 @@ grafico_petalas <- function(blocos) {
     petala_silhueta_svg(i)
   })
 
+  # Montando as guias em uma camada própria para ficarem sob o disco central
+  guias <- lapply(seq_len(nrow(blocos)), function(i) {
+    guia_petala_svg(i)
+  })
+
   # Montando cada pétala na ordem dos seis blocos do painel
   petalas <- lapply(seq_len(nrow(blocos)), function(i) {
     petala_svg(i, blocos)
@@ -199,23 +297,11 @@ grafico_petalas <- function(blocos) {
   centro <- htmltools::tags$circle(
     cx = PETALAS_CX,
     cy = PETALAS_CY,
-    r = 8,
+    r = PETALAS_RAIO_CENTRO,
     fill = "#0A1E3C",
     stroke = "#FFFFFF",
     `stroke-width` = 2
   )
-
-  # Nomeando cada bloco na legenda para identificar as pétalas sem hover
-  itens_legenda <- lapply(seq_len(nrow(blocos)), function(i) {
-    htmltools::tags$span(
-      class = "petalas-legenda__item",
-      htmltools::tags$span(
-        class = "petalas-legenda__cor",
-        style = paste0("background:", blocos$cor[i], ";")
-      ),
-      as.character(blocos$nome[i])
-    )
-  })
 
   # Montando o contêiner final com o SVG responsivo
   htmltools::tags$div(
@@ -226,11 +312,12 @@ grafico_petalas <- function(blocos) {
       xmlns = "http://www.w3.org/2000/svg",
       `role` = "img",
       `aria-label` = "Leque com os seis blocos do Índice VIDAS",
-      # Desenhando a camada de referência antes das pétalas para ficar por baixo
+      # Desenhando as fantasmas e as guias antes do centro para ficarem por baixo
       htmltools::tags$g(class = "camada-silhuetas", silhuetas),
+      htmltools::tags$g(class = "camada-guias", guias),
+      # Cobrindo as pontas das guias e das fantasmas sem esconder as pétalas reais
       centro,
       petalas
-    ),
-    htmltools::tags$div(class = "petalas-legenda", itens_legenda)
+    )
   )
 }

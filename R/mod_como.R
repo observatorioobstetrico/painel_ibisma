@@ -34,7 +34,6 @@ mod_como_ui <- function(id) {
       class = "painel-container",
       # Cabeçalho editorial da seção
       titulo_secao(
-        eyebrow = "Como?",
         titulo = "Como o Índice VIDAS se apresenta no município?",
         descricao = paste(
           "Escolha um município para ver a situação no ano selecionado",
@@ -51,14 +50,6 @@ mod_como_ui <- function(id) {
         seletor_inline(ns("ano"), anos, selected = max(dados_ibisma()$anos)),
         htmltools::tags$span(class = "controle-texto", "e comparar com"),
         seletor_inline(ns("comparar"), opcoes_comparacao, selected = "nenhum", largura = "320px")
-      ),
-      # Explicando as pétalas uma única vez, acima dos palcos
-      htmltools::tags$p(
-        class = "petalas-caption",
-        paste(
-          "Cada pétala representa um bloco do Índice VIDAS: quanto maior a pétala,",
-          "melhores as condições naquele bloco."
-        )
       ),
       # Palcos do município principal e do comparado, exibidos lado a lado
       htmltools::tags$div(
@@ -279,6 +270,7 @@ mod_como_server <- function(id, dados, municipio) {
         municipio = info(),
         resumo = resumo(),
         ano = ano(),
+        comparacao_ativa = tem_comparacao(),
         rotulo = if (tem_comparacao()) "Município principal" else NULL
       )
     })
@@ -291,6 +283,7 @@ mod_como_server <- function(id, dados, municipio) {
         resumo = resumo_comparacao(),
         ano = ano(),
         comparado = TRUE,
+        comparacao_ativa = TRUE,
         rotulo = "Município comparado"
       )
     })

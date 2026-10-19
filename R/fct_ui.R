@@ -6,16 +6,14 @@
 
 #' Definindo uma função que monta o cabeçalho de uma seção do painel
 #'
-#' @param eyebrow Texto curto acima do título.
 #' @param titulo Título principal da seção.
 #' @param descricao Parágrafo de apoio (opcional).
 #' @return Elemento HTML com o cabeçalho da seção.
 #' Usada em: mod_onde.R e mod_como.R (cabeçalho de cada seção).
 #' @noRd
-titulo_secao <- function(eyebrow, titulo, descricao = NULL) {
+titulo_secao <- function(titulo, descricao = NULL) {
   htmltools::tags$header(
     class = "secao-cabecalho",
-    htmltools::tags$span(class = "secao-eyebrow", eyebrow),
     htmltools::tags$h2(class = "secao-titulo", titulo),
     if (!is.null(descricao)) {
       htmltools::tags$p(class = "secao-descricao", descricao)

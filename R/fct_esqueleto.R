@@ -281,15 +281,6 @@ esqueleto_petalas <- function() {
       )
     )
   })
-  # Nomeando os blocos na legenda com larguras próximas das reais
-  larguras <- c("2rem", "8rem", "2.8rem", "1.8rem", "5.2rem", "1.8rem")
-  legenda <- lapply(larguras, function(largura) {
-    htmltools::tags$span(
-      class = "petalas-legenda__item",
-      htmltools::tags$span(class = "esqueleto__barra esqueleto__barra--ponto"),
-      esqueleto_barra(largura, "0.55em")
-    )
-  })
   htmltools::tags$div(
     class = "petalas esqueleto esqueleto--petalas",
     `aria-hidden` = "true",
@@ -301,18 +292,48 @@ esqueleto_petalas <- function() {
         xmlns = "http://www.w3.org/2000/svg",
         htmltools::tags$circle(
           class = "esqueleto__centro",
-          cx = PETALAS_CX, cy = PETALAS_CY, r = 8
+          cx = PETALAS_CX, cy = PETALAS_CY, r = PETALAS_RAIO_CENTRO
         ),
         petalas
       )
-    ),
-    htmltools::tags$div(class = "petalas-legenda", legenda)
+    )
+  )
+}
+
+#' Definindo uma função que monta o esqueleto das barras por bloco
+#'
+#' @return Elemento HTML com o título e seis barras neutras.
+#' Usada em: fct_esqueleto.R (esqueleto_palco).
+#' @noRd
+esqueleto_barras_blocos <- function() {
+  # Repetindo a estrutura de cada linha de barra sem qualquer valor
+  linhas <- lapply(seq_along(BLOCOS$medida), function(i) {
+    htmltools::tags$div(
+      class = "resultado-blocos__linha",
+      htmltools::tags$div(
+        class = "resultado-blocos__cabecalho",
+        htmltools::tags$span(
+          class = "resultado-blocos__nome",
+          esqueleto_barra("6rem", "0.55em")
+        ),
+        esqueleto_barra("2rem", "0.55em")
+      ),
+      htmltools::tags$div(
+        class = "resultado-blocos__trilho",
+        esqueleto_barra("100%", "100%")
+      )
+    )
+  })
+  htmltools::tags$div(
+    class = "resultado-blocos esqueleto--barras",
+    `aria-hidden` = "true",
+    linhas
   )
 }
 
 #' Definindo uma função que monta o esqueleto do Índice VIDAS
 #'
-#' @return Elemento HTML com rótulo, valor central e frase neutros.
+#' @return Elemento HTML com rótulo, valor e frase neutros.
 #' Usada em: fct_esqueleto.R (esqueleto_palco).
 #' @noRd
 esqueleto_indice <- function() {
@@ -321,26 +342,24 @@ esqueleto_indice <- function() {
     class = "perfil-indice",
     htmltools::tags$span(
       class = "perfil-indice__rotulo",
-      esqueleto_barra("6rem", "0.55em")
+      esqueleto_barra("7.2rem", "0.55em")
     ),
     htmltools::tags$div(
-      class = "perfil-indice__linha perfil-indice__linha--centro",
+      class = "perfil-indice__linha",
       htmltools::tags$span(
         class = "perfil-indice__valor",
-        esqueleto_barra("5.5rem", "0.72em")
+        esqueleto_barra("4.5rem", "0.72em")
       ),
       htmltools::tags$span(
         class = "perfil-indice__escala",
-        esqueleto_barra("2.5rem", "0.55em")
+        esqueleto_barra("3rem", "0.55em")
       ),
-      esqueleto_barra("5rem", "1.3em", "esqueleto__barra--selo")
+      esqueleto_barra("4.75rem", "1.3em", "esqueleto__barra--selo")
     ),
-    # Montando a frase em barras que quebram de linha como o texto real
+    # Reservando a frase do resultado em uma única linha, como no texto real
     htmltools::tags$p(
       class = "perfil-indice__frase",
-      esqueleto_barra("4rem"), " ", esqueleto_barra("5rem"), " ",
-      esqueleto_barra("3.5rem"), " ", esqueleto_barra("6rem"), " ",
-      esqueleto_barra("4.5rem"), " ", esqueleto_barra("3rem")
+      esqueleto_barra("13.2rem", "0.7em")
     )
   )
 }
@@ -351,20 +370,44 @@ esqueleto_indice <- function() {
 #' Usada em: fct_esqueleto.R (esqueleto_palco).
 #' @noRd
 esqueleto_rankings <- function() {
+  # Montando um item com rótulo, posição, trilho e extremos neutros
+  item <- function(classe, largura_rotulo, largura_valor) {
+    htmltools::tags$div(
+      class = paste("perfil-rankings__item", classe),
+      htmltools::tags$span(
+        class = "perfil-rankings__rotulo",
+        esqueleto_barra(largura_rotulo, "0.65em")
+      ),
+      htmltools::tags$span(
+        class = "perfil-rankings__valor",
+        esqueleto_barra(largura_valor, "1.2em")
+      ),
+      htmltools::tags$div(
+        class = "perfil-rankings__trilho esqueleto__barra",
+        style = "display:block;width:100%;height:0.25rem;",
+        # Reservando o ponto que marca o início do trilho real
+        htmltools::tags$span(
+          class = "esqueleto__barra esqueleto__barra--ponto",
+          style = paste0(
+            "position:absolute;top:50%;left:0;width:0.75rem;height:0.75rem;",
+            "transform:translate(-50%,-50%);"
+          )
+        )
+      ),
+      htmltools::tags$div(
+        class = "perfil-rankings__extremos",
+        style = "min-height:1.5em;align-items:center;",
+        esqueleto_barra("1.3rem", "0.65em"),
+        esqueleto_barra("2.2rem", "0.65em")
+      )
+    )
+  }
+
   htmltools::tags$div(
     class = "perfil-rankings",
-    htmltools::tags$div(
-      class = "perfil-rankings__item perfil-rankings__item--macro",
-      esqueleto_metrica("5.5rem", "5rem")
-    ),
-    htmltools::tags$div(
-      class = "perfil-rankings__item perfil-rankings__item--uf",
-      esqueleto_metrica("4.5rem", "6rem")
-    ),
-    htmltools::tags$div(
-      class = "perfil-rankings__item perfil-rankings__item--brasil",
-      esqueleto_metrica("4.5rem", "6rem")
-    )
+    item("perfil-rankings__item--macro", "5rem", "3.6rem"),
+    item("perfil-rankings__item--uf", "2.2rem", "3.6rem"),
+    item("perfil-rankings__item--brasil", "3rem", "7rem")
   )
 }
 
@@ -395,8 +438,25 @@ esqueleto_palco <- function() {
       esqueleto_metrica("6rem", "9rem")
     ),
     esqueleto_indice(),
-    htmltools::tags$div(class = "perfil-palco__grafico", esqueleto_petalas()),
-    esqueleto_rankings()
+    esqueleto_rankings(),
+    htmltools::tags$div(
+      class = "perfil-palco__cabecalho",
+      htmltools::tags$h4(
+        class = "perfil-palco__titulo",
+        esqueleto_barra("9.3rem", "0.65em")
+      )
+    ),
+    htmltools::tags$div(
+      class = "perfil-palco__graficos",
+      htmltools::tags$div(
+        class = "perfil-palco__coluna",
+        esqueleto_petalas()
+      ),
+      htmltools::tags$div(
+        class = "perfil-palco__coluna perfil-palco__coluna--barras",
+        esqueleto_barras_blocos()
+      )
+    )
   )
 }
 

@@ -39,7 +39,6 @@ mod_onde_ui <- function(id) {
       class = "painel-container",
       # Cabeçalho editorial da seção
       titulo_secao(
-        eyebrow = "Onde?",
         titulo = "Onde o Índice VIDAS revela maiores desafios?",
         descricao = paste(
           "O Índice VIDAS varia de 0 a 100: quanto menor o valor,",
@@ -485,8 +484,6 @@ tema_reactable <- function(medida = "indice_final") {
       borderBottom = "1px solid #DDE1E8",
       color = "#5A6472",
       fontWeight = "600",
-      textTransform = "uppercase",
-      letterSpacing = "0.04em",
       fontSize = "0.6875rem"
     ),
     rowSelectedStyle = list(

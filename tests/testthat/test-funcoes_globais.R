@@ -181,10 +181,13 @@ test_that("o resumo do município alimenta o palco com índice, rankings e bloco
       # O placar mostra o valor e a categoria do índice final
       expect_true(grepl(formatar_numero(linha$valor), palco, fixed = TRUE))
       expect_true(grepl(as.character(linha$categoria), palco, fixed = TRUE))
-      # Os três rankings aparecem com as posições da tabela do ano
-      expect_true(grepl(rotulo_posicao(linha$pos_macro, linha$total_macro), palco, fixed = TRUE))
-      expect_true(grepl(rotulo_posicao(linha$pos_uf, linha$total_uf), palco, fixed = TRUE))
-      expect_true(grepl(rotulo_posicao(linha$pos_nac, linha$total_nac), palco, fixed = TRUE))
+      # Os três rankings aparecem com as posições e os totais da tabela do ano
+      expect_true(grepl(formatar_inteiro(linha$pos_macro), palco, fixed = TRUE))
+      expect_true(grepl(paste0("de ", formatar_inteiro(linha$total_macro)), palco, fixed = TRUE))
+      expect_true(grepl(formatar_inteiro(linha$pos_uf), palco, fixed = TRUE))
+      expect_true(grepl(paste0("de ", formatar_inteiro(linha$total_uf)), palco, fixed = TRUE))
+      expect_true(grepl(formatar_inteiro(linha$pos_nac), palco, fixed = TRUE))
+      expect_true(grepl(paste0("de ", formatar_inteiro(linha$total_nac)), palco, fixed = TRUE))
 
       # Os seis blocos da pétala vêm na ordem configurada e com o valor real
       for (i in seq_len(nrow(BLOCOS))) {
@@ -575,6 +578,92 @@ test_that("frase_percentil mostra a parcela de municípios à frente", {
   expect_match(frase_percentil(40), "60,0%")
   expect_match(frase_percentil(40), "superior ao deste município")
   expect_match(frase_percentil(NA), "Sem dado")
+})
+
+test_that("frase_percentil destaca o melhor e o pior município", {
+  # A posição 1 é o pior resultado e a maior prioridade de atenção
+  expect_match(
+    frase_percentil(0, pos_nac = 1, total_nac = 5570),
+    "Pior resultado entre os 5.570 municípios",
+    fixed = TRUE
+  )
+  # A última posição é o melhor resultado do ranking
+  expect_match(
+    frase_percentil(100, pos_nac = 5570, total_nac = 5570),
+    "Melhor resultado entre os 5.570 municípios",
+    fixed = TRUE
+  )
+  # As posições intermediárias mantêm a leitura do percentil
+  expect_match(frase_percentil(50, pos_nac = 3000, total_nac = 5570), "50,0%")
+})
+
+test_that("posicao_trilho distribui a posição do pior ao melhor", {
+  expect_equal(posicao_trilho(1, 100), 0)
+  expect_equal(posicao_trilho(100, 100), 100)
+  expect_equal(posicao_trilho(50, 100), round(100 * 49 / 99, 6))
+  # Com um único município, o ponto fica no extremo do melhor
+  expect_equal(posicao_trilho(1, 1), 100)
+  expect_equal(posicao_trilho(NA, 100), 100)
+})
+
+test_that("regua_indice monta as cinco categorias e o marcador", {
+  html <- as.character(regua_indice(27.8))
+  # A régua desenha as cinco faixas da mais clara para a mais escura
+  expect_equal(
+    lengths(regmatches(html, gregexpr('class="perfil-indice__faixa"', html, fixed = TRUE))),
+    5
+  )
+  expect_true(grepl("left:27.8%;", html, fixed = TRUE))
+  expect_true(grepl("0 · muito baixo", html, fixed = TRUE))
+  expect_true(grepl("100 · muito alto", html, fixed = TRUE))
+})
+
+test_that("grafico_barras_blocos preenche o valor e deixa o restante em cinza", {
+  blocos <- data.frame(
+    medida = BLOCOS$medida,
+    nome = BLOCOS$nome,
+    valor = c(0, 25, 50, 75, 100, NA),
+    categoria = rep("Médio", 6),
+    cor = BLOCOS$cor,
+    pos_nac = 1:6,
+    total_nac = rep(100, 6),
+    stringsAsFactors = FALSE
+  )
+  html <- as.character(grafico_barras_blocos(blocos))
+  # As seis linhas de barra aparecem na ordem dos blocos, sem o título da linha
+  expect_false(grepl("Resultado por bloco", html, fixed = TRUE))
+  expect_false(grepl("resultado-blocos__ponto", html, fixed = TRUE))
+  expect_equal(
+    lengths(regmatches(html, gregexpr("resultado-blocos__linha", html, fixed = TRUE))),
+    6
+  )
+  # Cada barra ganha a mesma tooltip das pétalas, acessível por teclado
+  expect_equal(
+    lengths(regmatches(html, gregexpr('data-bs-toggle="tooltip"', html, fixed = TRUE))),
+    6
+  )
+  expect_equal(
+    lengths(regmatches(html, gregexpr('tabindex="0"', html, fixed = TRUE))),
+    6
+  )
+  expect_true(grepl("tooltip-petala__marca", html, fixed = TRUE))
+  expect_true(grepl("Ranking", html, fixed = TRUE))
+  # O preenchimento usa a cor do bloco e a largura do valor
+  expect_true(grepl("width:0.0%;background:#FAC80F", html, fixed = TRUE))
+  expect_true(grepl("width:100.0%;background:#1E5AA0", html, fixed = TRUE))
+  # O valor ausente não preenche a barra e aparece como "Sem dados"
+  expect_true(grepl("width:0.0%;background:#00A6A6", html, fixed = TRUE))
+  expect_true(grepl("Sem dados", html, fixed = TRUE))
+  # Cada valor tem a escala "de 100" em texto discreto ao lado
+  expect_equal(
+    lengths(regmatches(
+      html,
+      gregexpr('class="resultado-blocos__escala"', html, fixed = TRUE)
+    )),
+    5
+  )
+  # Nada relacionado à mediana do Brasil é exibido
+  expect_false(grepl("mediana", html, ignore.case = TRUE))
 })
 
 test_that("paletas e cores seguem a configuração do projeto", {
@@ -1240,8 +1329,8 @@ test_that("legenda_categorias omite Sem dados por padrão", {
 })
 
 test_that("as rampas de PALETAS seguem a configuração do projeto", {
-  # O índice tem a cor de identificação no início da rampa, onde ficam as prioridades
-  expect_equal(unname(PALETAS$indice_final[1]), COR_VIDAS)
+  # O índice tem a cor de identificação no fim da rampa, onde ficam as melhores condições
+  expect_equal(unname(PALETAS$indice_final[5]), COR_VIDAS)
 
   # Cada bloco tem a própria rampa e a categoria central é a cor de identificação
   for (m in BLOCOS$medida) {
@@ -1279,7 +1368,19 @@ test_that("tooltip da pétala carrega a cor da dimensão", {
   expect_true(grepl("tooltip-petala__marca", html, fixed = TRUE))
   expect_true(grepl(paste0("--cor-medida:", cor_medida("bloco3")), html, fixed = TRUE))
   expect_true(grepl(paste0("--cor-fundo:", cor_categoria("Médio", "bloco3")), html, fixed = TRUE))
-  expect_true(grepl("petalas-legenda", html, fixed = TRUE))
+  # A tooltip nomeia a posição no ranking, sem falar em prioridade
+  expect_true(grepl("Ranking", html, fixed = TRUE))
+  expect_false(grepl("Prioridade", html, fixed = TRUE))
+  # A chip de categoria fica na linha do valor, antes do ranking
+  tooltip <- tooltip_petala("Social", 40.9, "Médio", 2279, 5570, "bloco1")
+  pos_valor <- regexpr("Valor", tooltip, fixed = TRUE)[1]
+  pos_chip <- regexpr("--cor-fundo:", tooltip, fixed = TRUE)[1]
+  pos_ranking <- regexpr("Ranking", tooltip, fixed = TRUE)[1]
+  expect_true(pos_valor < pos_chip)
+  expect_true(pos_chip < pos_ranking)
+  # Os nomes dos blocos ficam nas próprias pétalas, sem a legenda abaixo
+  expect_true(grepl("rotulo-petala", html, fixed = TRUE))
+  expect_false(grepl("petalas-legenda", html, fixed = TRUE))
 })
 
 test_that("grafico_petalas monta as seis pétalas com tooltip", {
@@ -1345,6 +1446,35 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
     max(gregexpr('class="silhueta-petala"', html, fixed = TRUE)[[1]]) <
       min(gregexpr('class="grupo-petala"', html, fixed = TRUE)[[1]])
   )
+
+  # O leque abre até perto da horizontal para reduzir a sobreposição
+  expect_equal(ANGULOS_PETALAS, c(-80, -48, -16, 16, 48, 80))
+  # As fantasmas e as guias ficam abaixo do centro, e as pétalas reais acima dele
+  expect_equal(
+    lengths(regmatches(html, gregexpr('class="camada-guias"', html, fixed = TRUE))),
+    1
+  )
+  expect_equal(
+    lengths(regmatches(html, gregexpr('class="guia-petala"', html, fixed = TRUE))),
+    6
+  )
+  pos_silhuetas <- max(gregexpr('class="silhueta-petala"', html, fixed = TRUE)[[1]])
+  pos_guias <- max(gregexpr('class="guia-petala"', html, fixed = TRUE)[[1]])
+  pos_centro <- max(gregexpr('cx="250" cy="275" r="6"', html, fixed = TRUE)[[1]])
+  pos_petalas <- min(gregexpr('class="grupo-petala"', html, fixed = TRUE)[[1]])
+  expect_true(pos_silhuetas < pos_guias)
+  expect_true(pos_guias < pos_centro)
+  expect_true(pos_centro < pos_petalas)
+  # Os rótulos dos blocos aparecem diretamente junto das pétalas
+  for (rotulo in c(
+    "Social", "Planejamento", "Reprodutivo", "Pré-natal",
+    "Parto", "Sistema de Saúde", "Clima"
+  )) {
+    expect_true(grepl(paste0(">", rotulo, "</tspan>"), html, fixed = TRUE))
+  }
+  # Os nomes abreviados anteriores não são mais exibidos
+  expect_false(grepl(">Planej.</tspan>", html, fixed = TRUE))
+  expect_false(grepl(">Sistema</tspan>", html, fixed = TRUE))
 })
 
 test_that("a silhueta de referência permanece visível com valor zerado", {
@@ -1413,10 +1543,38 @@ test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
   expect_true(grepl(paste0("Índice VIDAS em ", ano), html, fixed = TRUE))
   expect_true(grepl("perfil-indice", html, fixed = TRUE))
   expect_true(grepl("perfil-rankings", html, fixed = TRUE))
+  # A régua do índice fica no tooltip da chip de categoria
+  expect_true(grepl("perfil-indice__chip", html, fixed = TRUE))
+  expect_true(grepl('data-tooltip-gatilho="hover focus click"', html, fixed = TRUE))
+  expect_true(grepl("data-tooltip-larga", html, fixed = TRUE))
+  expect_true(grepl("perfil-indice__regua", html, fixed = TRUE))
+  expect_true(grepl("0 · muito baixo", html, fixed = TRUE))
+  expect_true(grepl("100 · muito alto", html, fixed = TRUE))
+  # O município padrão é o de pior resultado e recebe o texto especial
+  expect_equal(linha$pos_nac, 1L)
+  expect_true(grepl("Pior resultado entre os", html, fixed = TRUE))
+  # A linha dos gráficos é nomeada uma única vez, antes das pétalas e das barras
+  expect_true(grepl("perfil-palco__titulo", html, fixed = TRUE))
+  expect_true(grepl("Resultado por bloco", html, fixed = TRUE))
+  # O botão de informação guarda a explicação das pétalas no tooltip
+  expect_true(grepl("perfil-palco__info", html, fixed = TRUE))
+  expect_true(grepl("No gráfico de pétalas, cada pétala representa", html, fixed = TRUE))
+  expect_true(grepl("O contorno pontilhado mostra o tamanho máximo", html, fixed = TRUE))
+  # A visão sem comparação mostra o resultado por bloco em barras
+  expect_true(grepl("resultado-blocos", html, fixed = TRUE))
   # Os três rankings aparecem na ordem pedida
-  expect_true(grepl("Na macrorregião de saúde", html, fixed = TRUE))
+  expect_true(grepl("Na macrorregião", html, fixed = TRUE))
   expect_true(grepl("Na UF", html, fixed = TRUE))
   expect_true(grepl("No Brasil", html, fixed = TRUE))
+  # Os rankings ganham trilhos com os extremos pior e melhor
+  expect_equal(
+    lengths(regmatches(html, gregexpr("perfil-rankings__trilho", html, fixed = TRUE))),
+    3
+  )
+  expect_equal(
+    lengths(regmatches(html, gregexpr("perfil-rankings__extremos", html, fixed = TRUE))),
+    3
+  )
   # O ranking estadual não repete o nome da UF no título
   expect_false(grepl("Na UF (", html, fixed = TRUE))
   # Os valores territoriais guardam o texto completo para o tooltip condicional
@@ -1430,6 +1588,40 @@ test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
   ))
   expect_true(grepl("painel-bloco--comparado", html_b, fixed = TRUE))
   expect_true(grepl("Município comparado", html_b, fixed = TRUE))
+  # Na comparação, o palco fica apenas com as pétalas, sem as barras
+  expect_false(grepl("resultado-blocos", html_b, fixed = TRUE))
+  expect_true(grepl("perfil-palco__graficos--petalas", html_b, fixed = TRUE))
+})
+
+test_that("perfil_rankings monta trilhos interativos com tooltip", {
+  resumo <- list(
+    pos_macro = 1, total_macro = 21, macro_r_saude = "OESTE",
+    pos_uf = 1, total_uf = 62, uf = "Amazonas",
+    pos_nac = 1, total_nac = 5570
+  )
+  html <- as.character(perfil_rankings(resumo))
+  # Cada um dos três rankings ganha um trilho com tooltip e foco por teclado
+  expect_equal(
+    lengths(regmatches(html, gregexpr('class="perfil-rankings__trilho"', html, fixed = TRUE))),
+    3
+  )
+  expect_equal(
+    lengths(regmatches(html, gregexpr('data-bs-toggle="tooltip"', html, fixed = TRUE))),
+    3
+  )
+  expect_equal(
+    lengths(regmatches(html, gregexpr('tabindex="0"', html, fixed = TRUE))),
+    3
+  )
+  # A tooltip mostra a posição e o escopo de cada ranking
+  expect_true(grepl("1º de 21", html, fixed = TRUE))
+  expect_true(grepl("1º de 62", html, fixed = TRUE))
+  expect_true(grepl("1º de 5.570", html, fixed = TRUE))
+  expect_true(grepl("Macrorregião", html, fixed = TRUE))
+  expect_true(grepl("OESTE", html, fixed = TRUE))
+  expect_true(grepl("UF", html, fixed = TRUE))
+  expect_true(grepl("Amazonas", html, fixed = TRUE))
+  expect_false(grepl("Escopo", html, fixed = TRUE))
 })
 
 test_that("perfil_palco mostra estado vazio quando não há dado no ano", {
@@ -1468,11 +1660,21 @@ test_that("esqueletos preservam a estrutura de cada output", {
   expect_true(grepl("perfil-metricas", palco))
   expect_true(grepl("perfil-indice", palco))
   expect_true(grepl("svg-petalas", palco))
+  expect_true(grepl("perfil-palco__titulo", palco))
+  expect_true(grepl("resultado-blocos", palco))
   expect_true(grepl("perfil-rankings", palco))
+  expect_true(grepl("perfil-rankings__trilho", palco))
+  # Cada trilho do esqueleto reserva também o ponto da posição
+  expect_equal(
+    lengths(regmatches(palco, gregexpr("esqueleto__barra--ponto", palco, fixed = TRUE))),
+    3
+  )
   expect_equal(
     lengths(regmatches(palco, gregexpr("esqueleto__disco", palco))),
     6
   )
+  # O esqueleto não repete a legenda removida do gráfico de pétalas
+  expect_false(grepl("petalas-legenda", palco))
   # O esqueleto não deve repetir nenhum valor do conteúdo real
   expect_false(grepl("Índice VIDAS em", palco))
 
