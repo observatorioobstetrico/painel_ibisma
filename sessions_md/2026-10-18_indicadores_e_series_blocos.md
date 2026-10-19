@@ -154,8 +154,9 @@ Depois dos primeiros testes com a base real, uma rodada de ajustes finos:
   do bloco escolhido (`--cor-serie`), e não o azul escuro padrão.
 - **Seletor de blocos**: virou botões soltos de largura variável, com mais
   respiro, ponto na cor do bloco e preenchimento sutil (`color-mix` de 16%);
-  saíram a caixa de fundo e o texto "Bloco". A seção passou a se chamar
-  "Os indicadores por trás de cada bloco", com a descrição nova.
+  o hover pré-visualiza a cor do bloco em 8%; saíram a caixa de fundo e o
+  texto "Bloco". A seção passou a se chamar "Os indicadores por trás de cada
+  bloco", com a descrição nova.
 - **Nome do bloco**: "Planejamento Reprodutivo" virou "Planejamento
   reprodutivo" em todo o painel (o dicionário `MEDIDAS` é a fonte única).
 - **Perfil do município**: o bloco do índice ("IBISMA em {ano}", valor, selo e

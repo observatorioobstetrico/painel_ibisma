@@ -1508,10 +1508,10 @@ input:focus-visible,
   background-color: var(--cor-bloco, var(--cor-azul-claro));
 }
 
-/* Suavizando o hover dos botões ainda não escolhidos */
+/* Pré-visualizando a cor do bloco sob o mouse, mais leve que o escolhido */
 .indicadores-controles .radio-group-buttons .btn.radiobtn:hover {
-  border-color: rgb(var(--cor-azul-escuro-rgb) / 0.22);
-  background-color: rgb(var(--cor-azul-escuro-rgb) / 0.04);
+  border-color: color-mix(in srgb, var(--cor-bloco) 30%, var(--cor-branco));
+  background-color: color-mix(in srgb, var(--cor-bloco) 8%, var(--cor-branco));
 }
 
 /* Marcando o botão escolhido com um preenchimento sutil da cor do bloco */
