@@ -92,7 +92,7 @@ navbar_ibisma <- function() {
           # Mantendo a descrição do índice visível apenas quando houver espaço
           htmltools::tags$span(
             class = "navbar-brand__descricao d-none d-lg-block",
-            "Vigilância dos Indicadores, Determinantes e Assistência à Saúde das Mulheres"
+            "Índice de Vigilância dos Indicadores, Determinantes e Assistência à Saúde das Mulheres"
           )
         )
       ),
