@@ -422,6 +422,15 @@ test_that("os limites das medidas fecham o eixo em cinco marcações inteiras", 
   expect_lte(limites$max, 100)
   expect_equal((limites$max - limites$min) / limites$passo, MARCACOES_EIXO - 1)
 
+  # Uma série que usa todo o percentil fecha em 0..100 de 25 em 25
+  extremos <- series_teste
+  extremos[, MEDIDAS$medida] <- 0
+  extremos$bloco1 <- c(0, 100)
+  expect_equal(
+    limites_medidas(extremos, BLOCOS$medida),
+    list(min = 0, max = 100, passo = 25)
+  )
+
   # Série sem valor algum mantém a escala completa do índice
   vazio <- series_teste
   vazio[, MEDIDAS$medida] <- NA_real_

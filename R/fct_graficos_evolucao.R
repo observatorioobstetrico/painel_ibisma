@@ -103,7 +103,16 @@ limites_eixo <- function(valores, passo_minimo = 1, passos = PASSOS_EIXO,
   }
 
   # Buscando o menor passo que cobre os dados nas cinco marcações
-  for (passo in passos_do_eixo(fim - inicio, passo_minimo, passos)) {
+  candidatos <- passos_do_eixo(fim - inicio, passo_minimo, passos)
+  # Acrescentando o passo que fecha o teto do dado exatamente na última marcação
+  if (is.finite(limite_maximo)) {
+    candidatos <- sort(unique(c(candidatos, limite_maximo / intervalos)))
+  }
+  # Descartando passos cuja faixa completa passaria do teto do dado (ex.: 100)
+  if (is.finite(limite_maximo)) {
+    candidatos <- candidatos[intervalos * candidatos <= limite_maximo + 1e-9]
+  }
+  for (passo in candidatos) {
     # Múltiplos do passo que comportam a janela de cinco marcações
     k_minimo <- ceiling(max(0, fim - intervalos * passo) / passo - 1e-9)
     k_maximo <- floor(inicio / passo + 1e-9)
@@ -119,7 +128,11 @@ limites_eixo <- function(valores, passo_minimo = 1, passos = PASSOS_EIXO,
     return(list(min = base, max = base + intervalos * passo, passo = passo))
   }
 
-  # Fallback defensivo: do zero ao maior passo, sempre válido
+  # Fallback defensivo: dividindo o teto do dado nas cinco marcações
+  if (is.finite(limite_maximo)) {
+    passo <- limite_maximo / intervalos
+    return(list(min = 0, max = limite_maximo, passo = passo))
+  }
   passo <- passos[length(passos)]
   list(min = 0, max = intervalos * passo, passo = passo)
 }
