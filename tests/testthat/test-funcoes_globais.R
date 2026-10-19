@@ -146,6 +146,15 @@ test_that("as categorias seguem os quintis e os rankings do ano", {
       rank(-iguais$valor, ties.method = "min", na.last = "keep")
     )
     expect_equal(unique(iguais$total_uf), sum(!is.na(iguais$valor)))
+
+    # O ranking da macrorregião é calculado dentro de cada UF e macro
+    macro <- base[base$sigla_uf == "RO", ]
+    macro <- macro[macro$macro_r_saude == macro$macro_r_saude[1], ]
+    expect_equal(
+      macro$pos_macro,
+      rank(-macro$valor, ties.method = "min", na.last = "keep")
+    )
+    expect_equal(unique(macro$total_macro), sum(!is.na(macro$valor)))
   }
 })
 
@@ -172,6 +181,9 @@ test_that("o resumo do município alimenta o palco com índice, rankings e bloco
       # O placar mostra o valor e a categoria do índice final
       expect_true(grepl(formatar_numero(linha$valor), palco, fixed = TRUE))
       expect_true(grepl(as.character(linha$categoria), palco, fixed = TRUE))
+      # Os três rankings aparecem com as posições da tabela do ano
+      expect_true(grepl(rotulo_posicao(linha$pos_macro, linha$total_macro), palco, fixed = TRUE))
+      expect_true(grepl(rotulo_posicao(linha$pos_uf, linha$total_uf), palco, fixed = TRUE))
       expect_true(grepl(rotulo_posicao(linha$pos_nac, linha$total_nac), palco, fixed = TRUE))
 
       # Os seis blocos da pétala vêm na ordem configurada e com o valor real
@@ -206,10 +218,11 @@ test_that("o palco fica vazio quando o município não tem dado no ano", {
     args = list(dados = dados, municipio = municipio),
     {
       session$setInputs(ano = as.character(lacuna$ano))
-      # Sem resumo no ano, o palco cai no estado vazio no lugar do placar
+      # Sem resumo no ano, o palco cai no estado vazio no lugar do perfil
       palco <- paste(as.character(output$palco_principal$html), collapse = "\n")
       expect_true(grepl("não possui dados no ano selecionado", palco, fixed = TRUE))
-      expect_false(grepl("perfil-placar", palco, fixed = TRUE))
+      expect_false(grepl("perfil-indice", palco, fixed = TRUE))
+      expect_false(grepl("perfil-rankings", palco, fixed = TRUE))
     }
   )
 })
@@ -266,24 +279,30 @@ test_that("grafico_evolucao destaca a série principal com área chapada e sem r
   expect_s3_class(formatter, "JS_EVAL")
   expect_true(grepl("Math.round", as.character(formatter)))
 
-  # O eixo Y começa no piso e termina no teto calculados da própria medida
-  expect_equal(grafico$x$opts$yAxis[[1]]$min, 50)
-  expect_equal(grafico$x$opts$yAxis[[1]]$max, 100)
-  # As linhas de grade marcam o eixo de 25 em 25
-  expect_equal(grafico$x$opts$yAxis[[1]]$interval, 25)
+  # O eixo Y fecha em cinco marcações inteiras ao redor da própria medida
+  expect_equal(grafico$x$opts$yAxis[[1]]$min, 70)
+  expect_equal(grafico$x$opts$yAxis[[1]]$max, 90)
+  expect_equal(grafico$x$opts$yAxis[[1]]$interval, 5)
+  expect_equal(
+    (grafico$x$opts$yAxis[[1]]$max - grafico$x$opts$yAxis[[1]]$min) /
+      grafico$x$opts$yAxis[[1]]$interval,
+    MARCACOES_EIXO - 1
+  )
 
-  # Os dois limites podem ser fixados pelo módulo na comparação
+  # O módulo pode impor uma faixa compartilhada na comparação
   compartilhado <- grafico_evolucao(
     series_teste, "indice_final",
-    minimo_y = 70, maximo_y = 95
+    limites = list(min = 60, max = 100, passo = 10)
   )
-  expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 70)
-  expect_equal(compartilhado$x$opts$yAxis[[1]]$max, 95)
+  expect_equal(compartilhado$x$opts$yAxis[[1]]$min, 60)
+  expect_equal(compartilhado$x$opts$yAxis[[1]]$max, 100)
 
-  # Um piso colado no teto sobe o topo para o eixo não degenerar
-  degenerado <- grafico_evolucao(series_teste, "indice_final", minimo_y = 90)
-  expect_equal(degenerado$x$opts$yAxis[[1]]$min, 90)
-  expect_equal(degenerado$x$opts$yAxis[[1]]$max, 100)
+  # Uma série constante abre folga para o eixo não degenerar
+  constante <- series_teste
+  constante$indice_final <- c(80, 80)
+  degenerado <- grafico_evolucao(constante, "indice_final")
+  expect_equal(degenerado$x$opts$yAxis[[1]]$min, 70)
+  expect_equal(degenerado$x$opts$yAxis[[1]]$max, 90)
 
   # O desenho em SVG evita o borrão do canvas sob zoom ou escala fracionária
   expect_equal(grafico$x$renderer, "svg")
@@ -373,52 +392,40 @@ test_that("grafico_evolucao diferencia a comparação pelo traço e pelo símbol
   expect_null(linha_comparada$emphasis)
 })
 
-test_that("piso_eixo_y arredonda o menor valor para baixo no múltiplo de 25", {
-  # O menor valor da série fica em 25, então o eixo começa em 25
-  expect_equal(piso_eixo_y(series_teste), 25)
+test_that("os limites das medidas fecham o eixo em cinco marcações inteiras", {
+  # O índice de teste vai de 70 a 90, então o eixo fecha em 70..90 de 5 em 5
+  limites <- limites_medidas(series_teste, "indice_final")
+  expect_equal(limites$min, 70)
+  expect_equal(limites$max, 90)
+  expect_equal(limites$passo, 5)
 
-  # O piso pode ser calculado apenas com um grupo de medidas
-  expect_equal(piso_eixo_y(series_teste, "indice_final"), 50)
-  expect_equal(piso_eixo_y(series_teste, BLOCOS$medida), 25)
+  # Os seis blocos compartilham a faixa inteira dos valores (25 a 85)
+  limites <- limites_medidas(series_teste, BLOCOS$medida)
+  expect_equal((limites$max - limites$min) / limites$passo, MARCACOES_EIXO - 1)
+  expect_lte(limites$min, 25)
+  expect_gte(limites$max, 85)
 
-  # Valores altos aproximam o piso do topo, sem criar um eixo degenerado
+  # Uma série constante abre folga para o eixo não degenerar
+  constante <- series_teste
+  constante$indice_final <- c(80, 80)
+  limites <- limites_medidas(constante, "indice_final")
+  expect_equal(limites$min, 70)
+  expect_equal(limites$max, 90)
+
+  # O topo do eixo nunca passa dos 100 do percentil
   alto <- series_teste
-  alto[, MEDIDAS$medida] <- 95
-  alto$indice_final[alto$ano == 2021] <- 91
-  expect_equal(piso_eixo_y(alto), 75)
+  alto[, MEDIDAS$medida] <- 100
+  limites <- limites_medidas(alto, MEDIDAS$medida)
+  expect_lte(limites$max, 100)
+  expect_equal((limites$max - limites$min) / limites$passo, MARCACOES_EIXO - 1)
 
-  cem <- series_teste
-  cem[, MEDIDAS$medida] <- 100
-  expect_equal(piso_eixo_y(cem), 75)
-
-  # Série sem valor algum mantém o eixo na escala completa
+  # Série sem valor algum mantém a escala completa do índice
   vazio <- series_teste
   vazio[, MEDIDAS$medida] <- NA_real_
-  expect_equal(piso_eixo_y(vazio), 0)
-})
-
-test_that("teto_eixo_y arredonda o maior valor para cima no múltiplo de 25", {
-  # O maior valor da série fica em 90, então o eixo termina em 100
-  expect_equal(teto_eixo_y(series_teste), 100)
-
-  # O teto pode ser calculado apenas com um grupo de medidas
-  expect_equal(teto_eixo_y(series_teste, "indice_final"), 100)
-  expect_equal(teto_eixo_y(series_teste, BLOCOS$medida), 100)
-
-  # Valores baixos mantêm um múltiplo mínimo para o eixo não degenerar
-  baixo <- series_teste
-  baixo[, MEDIDAS$medida] <- 5
-  expect_equal(teto_eixo_y(baixo), 25)
-
-  # Valores no topo da escala param no limite do índice
-  alto <- series_teste
-  alto[, MEDIDAS$medida] <- 95
-  expect_equal(teto_eixo_y(alto), 100)
-
-  # Série sem valor algum mantém o eixo na escala completa
-  vazio <- series_teste
-  vazio[, MEDIDAS$medida] <- NA_real_
-  expect_equal(teto_eixo_y(vazio), 100)
+  expect_equal(
+    limites_medidas(vazio, MEDIDAS$medida),
+    list(min = 0, max = 100, passo = 25)
+  )
 })
 
 test_that("a evolução usa limites de eixo por grupo de medidas", {
@@ -430,15 +437,8 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
   # Calculando os limites esperados para conferir o que o módulo entrega
   series_principal_ref <- series_municipio(dados, principal)
   series_comparacao_ref <- series_municipio(dados, comparado)
-  limites_indice <- c(
-    min(
-      piso_eixo_y(series_principal_ref, "indice_final"),
-      piso_eixo_y(series_comparacao_ref, "indice_final")
-    ),
-    max(
-      teto_eixo_y(series_principal_ref, "indice_final"),
-      teto_eixo_y(series_comparacao_ref, "indice_final")
-    )
+  limites_indice <- limites_medidas(
+    series_principal_ref, "indice_final", series_comparacao_ref
   )
 
   municipio <- shiny::reactiveVal(principal)
@@ -458,16 +458,30 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
       }
 
       # O IBISMA tem escala própria, cobrindo os dois índices sem cortá-los
-      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min, limites_indice[1])
-      expect_equal(opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max, limites_indice[2])
+      expect_equal(
+        opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min,
+        limites_indice$min
+      )
+      expect_equal(
+        opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max,
+        limites_indice$max
+      )
+      expect_equal(
+        opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$interval,
+        limites_indice$passo
+      )
 
       # Os seis blocos compartilham a mesma escala entre os cartões
       min_blocos <- opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$min
       max_blocos <- opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$max
+      intervalo_blocos <- opcoes_do_grafico(output$grafico_bloco1)$yAxis[[1]]$interval
+      # Todos os cartões de bloco desenham cinco marcações equiespaçadas
+      expect_equal((max_blocos - min_blocos) / intervalo_blocos, MARCACOES_EIXO - 1)
       for (medida in BLOCOS$medida[-1]) {
         opcoes <- opcoes_do_grafico(output[[paste0("grafico_", medida)]])
         expect_equal(opcoes$yAxis[[1]]$min, min_blocos)
         expect_equal(opcoes$yAxis[[1]]$max, max_blocos)
+        expect_equal(opcoes$yAxis[[1]]$interval, intervalo_blocos)
       }
 
       # Cada gráfico desenha a localidade principal e a comparação
@@ -494,15 +508,24 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
         fixed = TRUE
       ))
 
+      # A identificação se repete abaixo do título dos blocos e do seletor
+      identificacao_blocos <- as.character(output$evolucao_identificacao_blocos$html)
+      expect_true(grepl(nome_municipio(dados, principal), identificacao_blocos, fixed = TRUE))
+      expect_true(grepl(nome_municipio(dados, comparado), identificacao_blocos, fixed = TRUE))
+      identificacao_indicadores <- as.character(output$indicadores_identificacao$html)
+      expect_true(grepl(nome_municipio(dados, principal), identificacao_indicadores, fixed = TRUE))
+      expect_true(grepl(nome_municipio(dados, comparado), identificacao_indicadores, fixed = TRUE))
+
       # Sem comparação o eixo do IBISMA segue apenas o município principal
       session$setInputs(comparar = "nenhum")
+      limites_so_principal <- limites_medidas(series_principal_ref, "indice_final")
       expect_equal(
         opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min,
-        piso_eixo_y(series_principal_ref, "indice_final")
+        limites_so_principal$min
       )
       expect_equal(
         opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$max,
-        teto_eixo_y(series_principal_ref, "indice_final")
+        limites_so_principal$max
       )
       expect_length(opcoes_do_grafico(output$grafico_bloco1)$series, 1)
 
@@ -593,12 +616,12 @@ test_that("nome_medida prefixa os blocos com Bloco quando pedido", {
   expect_equal(nome_medida("indice_final", prefixo_bloco = TRUE), "IBISMA")
   expect_equal(
     nome_medida("bloco2", prefixo_bloco = TRUE),
-    "Bloco Planejamento Reprodutivo"
+    "Bloco Planejamento reprodutivo"
   )
   # Sem o prefixo, os nomes continuam como configurados
   expect_equal(
     nome_medida(c("indice_final", "bloco2")),
-    c("IBISMA", "Planejamento Reprodutivo")
+    c("IBISMA", "Planejamento reprodutivo")
   )
 })
 
@@ -1238,7 +1261,7 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
     6
   )
   expect_true(grepl("tooltip-petala", html))
-  expect_true(grepl("Planejamento Reprodutivo", html))
+  expect_true(grepl("Planejamento reprodutivo", html))
   # Os valores dentro das pétalas usam sempre uma casa decimal
   expect_true(grepl(">100,0</text>", html, fixed = TRUE))
   expect_true(grepl(">10,0</text>", html, fixed = TRUE))
@@ -1308,7 +1331,7 @@ test_that("a silhueta de referência permanece visível com valor zerado", {
   )
 })
 
-test_that("perfil_palco monta identificação, pétalas e placar", {
+test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
   dados <- dados_ibisma()
   ano <- max(dados$anos)
   cod <- municipio_padrao(dados)
@@ -1332,6 +1355,8 @@ test_that("perfil_palco monta identificação, pétalas e placar", {
     total_nac = linha$total_nac,
     pos_uf = linha$pos_uf,
     total_uf = linha$total_uf,
+    pos_macro = linha$pos_macro,
+    total_macro = linha$total_macro,
     blocos = blocos
   )
 
@@ -1348,9 +1373,13 @@ test_that("perfil_palco monta identificação, pétalas e placar", {
   expect_true(grepl("Município principal", html, fixed = TRUE))
   expect_true(grepl("svg-petalas", html, fixed = TRUE))
   expect_true(grepl(paste0("IBISMA em ", ano), html, fixed = TRUE))
-  expect_true(grepl("perfil-placar", html, fixed = TRUE))
-  # O ranking estadual não repete o nome da UF no título
+  expect_true(grepl("perfil-indice", html, fixed = TRUE))
+  expect_true(grepl("perfil-rankings", html, fixed = TRUE))
+  # Os três rankings aparecem na ordem pedida
+  expect_true(grepl("Ranking na macrorregião", html, fixed = TRUE))
   expect_true(grepl("Ranking na UF", html, fixed = TRUE))
+  expect_true(grepl("Ranking Brasil", html, fixed = TRUE))
+  # O ranking estadual não repete o nome da UF no título
   expect_false(grepl("Ranking na UF (", html, fixed = TRUE))
   # Os valores territoriais guardam o texto completo para o tooltip condicional
   expect_true(grepl("metrica-tooltip", html, fixed = TRUE))
@@ -1371,7 +1400,8 @@ test_that("perfil_palco mostra estado vazio quando não há dado no ano", {
   municipio <- dados$municipios[dados$municipios$codmunres == cod, ]
   html <- as.character(perfil_palco(municipio, NULL, ano = max(dados$anos)))
   expect_true(grepl("não possui dados no ano selecionado", html, fixed = TRUE))
-  expect_false(grepl("perfil-placar", html, fixed = TRUE))
+  expect_false(grepl("perfil-indice", html, fixed = TRUE))
+  expect_false(grepl("perfil-rankings", html, fixed = TRUE))
 })
 
 test_that("esqueletos preservam a estrutura de cada output", {
@@ -1394,12 +1424,13 @@ test_that("esqueletos preservam a estrutura de cada output", {
   expect_true(grepl("esqueleto__forma", mapa))
   expect_true(grepl("esqueleto__controle", mapa))
 
-  # O palco mantém identificação, pétalas e placar na mesma composição
+  # O palco mantém identificação, índice, pétalas e rankings na mesma composição
   palco <- as.character(esqueleto_palco())
   expect_true(grepl("perfil-nome", palco))
   expect_true(grepl("perfil-metricas", palco))
+  expect_true(grepl("perfil-indice", palco))
   expect_true(grepl("svg-petalas", palco))
-  expect_true(grepl("perfil-placar", palco))
+  expect_true(grepl("perfil-rankings", palco))
   expect_equal(
     lengths(regmatches(palco, gregexpr("esqueleto__disco", palco))),
     6
@@ -1425,9 +1456,10 @@ test_that("esqueletos preservam a estrutura de cada output", {
     lengths(regmatches(evolucao, gregexpr("esqueleto__grafico-margem", evolucao))),
     7
   )
+  # Cada gráfico reserva as cinco marcações do eixo Y, como o gráfico real
   expect_equal(
     lengths(regmatches(evolucao, gregexpr("esqueleto__barra--rotulo", evolucao))),
-    28
+    7 * MARCACOES_EIXO
   )
 
   # O slot empilha o output e o esqueleto para o CSS exibir durante a carga
@@ -1543,11 +1575,12 @@ test_that("o passo redondo e as casas decimais cobrem cada escala", {
 test_that("os limites dos indicadores se adaptam à escala", {
   series_ind <- data.frame(ano = 2020:2022, PRE_NATAL = c(40, 55, 70))
 
-  # A faixa fecha em cinco intervalos redondos, centrados nos dados
+  # A faixa fecha em cinco marcações redondas, centradas nos dados
   limites <- limites_indicador(series_ind, "PRE_NATAL")
-  expect_equal(limites$min, 30)
+  expect_equal(limites$min, 40)
   expect_equal(limites$max, 80)
   expect_equal(limites$passo, 10)
+  expect_equal((limites$max - limites$min) / limites$passo, MARCACOES_EIXO - 1)
 
   # Uma série constante abre folga em torno do valor (caso do IDHM)
   constante <- data.frame(ano = 2020:2022, PRE_NATAL = c(60, 60, 60))
@@ -1566,11 +1599,11 @@ test_that("os limites dos indicadores se adaptam à escala", {
   expect_gte(limites$passo, 0.1)
   expect_true(limites$min <= 99.6 && limites$max >= 99.9)
 
-  # Sem valor algum, o eixo fica na faixa neutra de cinco intervalos
+  # Sem valor algum, o eixo fica na faixa neutra de cinco marcações
   vazio <- data.frame(ano = 2020:2022, PRE_NATAL = c(NA, NA, NA))
   expect_equal(
     limites_indicador(vazio, "PRE_NATAL"),
-    list(min = 0, max = 1, passo = 0.2)
+    list(min = 0, max = 0.4, passo = 0.1)
   )
 
   # Com comparação, a faixa cobre os dois municípios
@@ -1590,8 +1623,8 @@ test_that("grafico_evolucao_indicador usa a cor do bloco e a escala do indicador
   expect_equal(serie$itemStyle$color, cor_linha_medida("bloco3"))
   expect_equal(serie$lineStyle$type, "solid")
 
-  # O eixo Y acompanha a escala própria do indicador, em cinco intervalos
-  expect_equal(grafico$x$opts$yAxis[[1]]$min, 30)
+  # O eixo Y acompanha a escala própria do indicador, em cinco marcações
+  expect_equal(grafico$x$opts$yAxis[[1]]$min, 40)
   expect_equal(grafico$x$opts$yAxis[[1]]$max, 80)
   expect_equal(grafico$x$opts$yAxis[[1]]$interval, 10)
 
