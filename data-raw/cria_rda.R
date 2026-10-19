@@ -1,5 +1,5 @@
 # =============================================================================
-#   GERANDO OS DADOS DO PAINEL IBISMA
+#   GERANDO OS DADOS DO PAINEL VIDAS
 #   Rode na raiz do pacote, com o projeto aberto: botão Source do RStudio.
 #   O script está em ordem de execução e imprime uma conferência a cada passo,
 #   então também dá para rodar linha por linha (Ctrl+Enter) e ir acompanhando.
@@ -23,7 +23,8 @@ library(tidyr)
 #   1. BASE BRUTA
 # =============================================================================
 
-# Lendo o índice e os seis blocos, em percentis, de 2015 a 2024
+# Lendo o índice e os seis blocos, em percentis de vulnerabilidade, de 2015 a 2024
+# A inversão para o Índice VIDAS acontece na etapa 3, depois da base longa
 df_indice <- read.csv("data-raw/databases/indice_materno_final_2015_2024.csv")
 print(head(df_indice))
 cat("Linhas lidas:", nrow(df_indice), "\n")
@@ -38,7 +39,7 @@ df_indicadores <- read.csv("data-raw/databases/banco_dados_atualizado_2024_abril
     tx_leitos_hospitalares_totais, tx_leitos_uti_total, mean_UTCI_C
   )
 
-# Lendo o indicador bruto de hemoterapia, que entra no bloco Sistema de saúde
+# Lendo o indicador bruto de hemoterapia, que entra no bloco Sistema de Saúde
 df_hemo <- read.csv("data-raw/databases/dados_servicos_hemo.csv") |>
   select(ano, codmunres, leitos_obst_med_transfusional = indicador5)
 
@@ -136,7 +137,7 @@ medidas <- MEDIDAS$medida
 # Nomes das colunas dos indicadores brutos que compõem os blocos
 indicadores <- INDICADORES$indicador
 
-# Rótulos das cinco categorias, do menos para o mais vulnerável
+# Rótulos das cinco categorias, do menor para o maior Índice VIDAS
 categorias <- CATEGORIAS
 
 # Percentis que cortam as cinco categorias (específicos da geração dos dados)
@@ -151,7 +152,7 @@ df_ibisma <- df_ibisma |>
 
 # =============================================================================
 #   3. BASE LONGA
-#   Uma linha por município, ano e medida, com os valores de 0 a 100
+#   Uma linha por município, ano e medida, com os valores de VIDAS de 0 a 100
 # =============================================================================
 
 ibisma_longo <- df_ibisma |>
@@ -161,8 +162,8 @@ ibisma_longo <- df_ibisma |>
     names_to = "medida",
     values_to = "valor"
   ) |>
-  # Convertendo os valores de 0 a 1 para 0 a 100
-  mutate(valor = 100 * valor) |>
+  # Invertendo os percentis de vulnerabilidade em VIDAS (maior = melhor)
+  mutate(valor = 100 * (1 - valor)) |>
   # Mantendo só as colunas usadas pelo painel
   select(
     ano, codmunres, medida, valor,
@@ -200,29 +201,29 @@ for (ano_atual in sort(unique(df_ibisma$ano))) {
     ungroup() |>
     select(-corte)
 
-  # Ranqueando os municípios no Brasil (posição 1 = mais vulnerável)
+  # Ranqueando no Brasil com a posição 1 no menor Índice VIDAS
   tabela_ano <- tabela_ano |>
     group_by(medida) |>
     mutate(
-      pos_nac = rank(-valor, ties.method = "min", na.last = "keep"),
+      pos_nac = rank(valor, ties.method = "min", na.last = "keep"),
       total_nac = sum(!is.na(valor))
     ) |>
     ungroup()
 
-  # Ranqueando os municípios dentro da própria UF
+  # Ranqueando dentro da própria UF, também do menor para o maior Índice VIDAS
   tabela_ano <- tabela_ano |>
     group_by(medida, sigla_uf) |>
     mutate(
-      pos_uf = rank(-valor, ties.method = "min", na.last = "keep"),
+      pos_uf = rank(valor, ties.method = "min", na.last = "keep"),
       total_uf = sum(!is.na(valor))
     ) |>
     ungroup()
 
-  # Ranqueando os municípios dentro da própria macrorregião de saúde
+  # Ranqueando dentro da própria macrorregião de saúde
   tabela_ano <- tabela_ano |>
     group_by(medida, sigla_uf, macro_r_saude) |>
     mutate(
-      pos_macro = rank(-valor, ties.method = "min", na.last = "keep"),
+      pos_macro = rank(valor, ties.method = "min", na.last = "keep"),
       total_macro = sum(!is.na(valor))
     ) |>
     ungroup()

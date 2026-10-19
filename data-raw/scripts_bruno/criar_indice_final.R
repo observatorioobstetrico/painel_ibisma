@@ -11,6 +11,8 @@
 #   objeto R `var_indice`, contendo `indice_mf_v1` (0–1) e
 #   `indice_mf_v1_0_100` (0–100).
 #
+# O CSV mantém a escala de vulnerabilidade (maior = pior). A inversão para o
+# Índice VIDAS (maior = melhor) é feita em data-raw/cria_rda.R.
 # ==============================================================================
 
 library(dplyr)
