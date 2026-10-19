@@ -178,7 +178,8 @@ print(head(ibisma_longo))
 
 # =============================================================================
 #   4. TABELAS POR ANO
-#   Para cada ano e medida: categoria (quintis do ano) e rankings Brasil/UF
+#   Para cada ano e medida: categoria (quintis do ano) e rankings
+#   Brasil, UF e macrorregião de saúde
 # =============================================================================
 
 # Criando a pasta que guarda os arquivos lidos pelo painel
@@ -214,6 +215,15 @@ for (ano_atual in sort(unique(df_ibisma$ano))) {
     mutate(
       pos_uf = rank(-valor, ties.method = "min", na.last = "keep"),
       total_uf = sum(!is.na(valor))
+    ) |>
+    ungroup()
+
+  # Ranqueando os municípios dentro da própria macrorregião de saúde
+  tabela_ano <- tabela_ano |>
+    group_by(medida, sigla_uf, macro_r_saude) |>
+    mutate(
+      pos_macro = rank(-valor, ties.method = "min", na.last = "keep"),
+      total_macro = sum(!is.na(valor))
     ) |>
     ungroup()
 
