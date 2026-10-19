@@ -5,7 +5,7 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
-  # Preparando a base do IBISMA uma única vez por processo
+  # Preparando a base do painel uma única vez por processo
   dados <- dados_ibisma()
 
   # Compartilhando o município selecionado entre as duas seções do painel

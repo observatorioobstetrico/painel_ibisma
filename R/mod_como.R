@@ -1,7 +1,7 @@
 # =============================================================================
 #   MÓDULO COMO?
 #   Permite explorar um município em detalhe: situação no ano escolhido,
-#   flor dos seis blocos e evolução temporal do IBISMA e dos blocos.
+#   flor dos seis blocos e evolução temporal do Índice VIDAS e dos blocos.
 #   Quando há comparação ativa, palcos e gráficos aparecem lado a lado.
 # =============================================================================
 
@@ -35,7 +35,7 @@ mod_como_ui <- function(id) {
       # Cabeçalho editorial da seção
       titulo_secao(
         eyebrow = "Como?",
-        titulo = "Como a insegurança se apresenta no município?",
+        titulo = "Como o Índice VIDAS se apresenta no município?",
         descricao = paste(
           "Escolha um município para ver a situação no ano selecionado",
           "e a evolução ao longo do tempo, comparando com outro município",
@@ -56,8 +56,8 @@ mod_como_ui <- function(id) {
       htmltools::tags$p(
         class = "petalas-caption",
         paste(
-          "Cada pétala representa um bloco do IBISMA: quanto maior a pétala,",
-          "maior a insegurança naquele bloco."
+          "Cada pétala representa um bloco do Índice VIDAS: quanto maior a pétala,",
+          "melhores as condições naquele bloco."
         )
       ),
       # Palcos do município principal e do comparado, exibidos lado a lado
@@ -81,7 +81,7 @@ mod_como_ui <- function(id) {
           )
         )
       ),
-      # Evolução temporal com o IBISMA em destaque e os blocos em pequenos múltiplos
+      # Evolução temporal com o Índice VIDAS em destaque e os blocos em pequenos múltiplos
       htmltools::tags$div(
         class = "painel-bloco painel-bloco--evolucao",
         htmltools::tags$div(
@@ -90,7 +90,7 @@ mod_como_ui <- function(id) {
           htmltools::tags$p(
             class = "bloco-descricao",
             paste(
-              "Acompanhe a evolução do IBISMA e de seus seis blocos entre 2015 e 2024."
+              "Acompanhe a evolução do Índice VIDAS e de seus seis blocos entre 2015 e 2024."
             )
           ),
           # Identificando os municípios e o período exibidos nos gráficos
@@ -327,7 +327,7 @@ mod_como_server <- function(id, dados, municipio) {
       )
     }
 
-    # Dando ao IBISMA uma escala própria, mais estreita que a dos blocos
+    # Dando ao Índice VIDAS uma escala própria, mais estreita que a dos blocos
     limites_ibisma <- shiny::reactive(limites_do_grupo("indice_final"))
     # Compartilhando a escala dos seis blocos para os cartões serem comparáveis
     limites_blocos <- shiny::reactive(limites_do_grupo(BLOCOS$medida))

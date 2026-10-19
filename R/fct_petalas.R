@@ -31,7 +31,7 @@ PETALAS_VIEWBOX <- "45 60 410 236"
 #'
 #' @param nome Nome do bloco.
 #' @param valor Valor do bloco na escala 0 a 100.
-#' @param categoria Categoria de vulnerabilidade do bloco.
+#' @param categoria Faixa do Índice VIDAS no bloco.
 #' @param pos_nac Posição do município no ranking nacional.
 #' @param total_nac Total de municípios ranqueados.
 #' @param medida Identificador do bloco que define a cor da dimensão.
@@ -51,7 +51,7 @@ tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
     '<span class="tooltip-petala__valor">', formatar_numero(valor), "</span>",
     "</div>",
     '<div class="tooltip-petala__linha">',
-    '<span class="tooltip-petala__rotulo">Ranking</span>',
+    '<span class="tooltip-petala__rotulo">Prioridade</span>',
     '<span class="tooltip-petala__valor">',
     rotulo_posicao(pos_nac, total_nac),
     "</span></div>",
@@ -167,7 +167,7 @@ petala_svg <- function(i, blocos) {
   )
 }
 
-#' Definindo uma função que monta o gráfico de pétalas dos seis blocos do IBISMA
+#' Definindo uma função que monta o gráfico de pétalas dos seis blocos do Índice VIDAS
 #'
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
 #' @return Elemento HTML com o leque de pétalas e as legendas de apoio.
@@ -225,7 +225,7 @@ grafico_petalas <- function(blocos) {
       class = "svg-petalas",
       xmlns = "http://www.w3.org/2000/svg",
       `role` = "img",
-      `aria-label` = "Leque com os seis blocos do IBISMA",
+      `aria-label` = "Leque com os seis blocos do Índice VIDAS",
       # Desenhando a camada de referência antes das pétalas para ficar por baixo
       htmltools::tags$g(class = "camada-silhuetas", silhuetas),
       centro,

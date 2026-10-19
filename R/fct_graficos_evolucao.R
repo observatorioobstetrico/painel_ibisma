@@ -1,6 +1,6 @@
 # =============================================================================
 #   FUNÇÕES AUXILIARES DA EVOLUÇÃO TEMPORAL
-#   Monta os gráficos de evolução do IBISMA e dos seis blocos com echarts4r
+#   Monta os gráficos de evolução do Índice VIDAS e dos seis blocos com echarts4r
 #   (licença Apache 2.0). O leque de pétalas fica em fct_petalas.R, em SVG.
 # =============================================================================
 
@@ -36,7 +36,7 @@ PASSOS_MEDIDA <- c(1, 2, 5, 10)
 # Definindo a opacidade do preenchimento sob as linhas da evolução (0 desliga)
 OPACIDADE_AREA_EVOLUCAO <- 0
 
-#' Definindo uma função que aplica o tooltip padrão do IBISMA a um gráfico echarts4r
+#' Definindo uma função que aplica o tooltip padrão do painel a um gráfico echarts4r
 #'
 #' @param grafico Objeto echarts4r.
 #' @param trigger Modo de acionamento do tooltip ("item" ou "axis").
@@ -183,7 +183,7 @@ grafico_evolucao <- function(series, medida, nome = NULL,
     dados$comparacao <- comparacao[[medida]]
   }
 
-  # Reservando ao IBISMA a linha mais espessa e o símbolo maior
+  # Reservando ao Índice VIDAS a linha mais espessa e o símbolo maior
   largura <- if (eh_indice) 2.5 else 2
   # Usando o mesmo tamanho de bolinha nas duas séries, a meio caminho do desenho
   tamanho <- if (eh_indice) 7 else 5.5
@@ -511,7 +511,7 @@ tooltip_evolucao_js <- function(decimais = 1, sufixo = "") {
        var g = function (v) { return Number(v).toFixed(", decimais, ").replace('.', ','); };
        /* Buscando a cor das linhas entre as séries: o miolo branco da séries */
        /* comparada esconde a cor real no itemStyle dela */
-       var corSerie = '#4B1D73';
+       var corSerie = '", COR_VIDAS, "';
        for (var k = 0; k < params.length; k++) {
          var candidata = params[k].color;
          if (typeof candidata === 'string' && candidata.toUpperCase() !== '#FFFFFF') {
@@ -561,7 +561,7 @@ tooltip_evolucao_js <- function(decimais = 1, sufixo = "") {
 #' Definindo uma função que monta a grade de gráficos da evolução temporal
 #'
 #' @param ns Função de namespace do módulo.
-#' @return Elemento HTML com o cartão do IBISMA e os seis cartões dos blocos.
+#' @return Elemento HTML com o cartão do Índice VIDAS e os seis cartões dos blocos.
 #' Usada em: mod_como.R (grade da evolução).
 #' @noRd
 grade_evolucao_ui <- function(ns) {
@@ -582,10 +582,10 @@ grade_evolucao_ui <- function(ns) {
 
   htmltools::tags$div(
     class = "evolucao-grade",
-    # Destacando o IBISMA em um cartão de largura total
+    # Destacando o Índice VIDAS em um cartão de largura total
     cartao("indice_final", ALTURA_GRAFICO_IBISMA, "evolucao-card--ibisma"),
     # Organizando os seis blocos em pequenos múltiplos
-    htmltools::tags$h4(class = "evolucao-grade__titulo", "Blocos do IBISMA"),
+    htmltools::tags$h4(class = "evolucao-grade__titulo", "Blocos do Índice VIDAS"),
     # Identificando os municípios logo abaixo do título dos blocos
     htmltools::tags$div(
       class = "evolucao-identificacao--blocos",

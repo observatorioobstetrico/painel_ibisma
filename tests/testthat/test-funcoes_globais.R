@@ -69,12 +69,12 @@ test_that("as séries prontas batem com os CSVs da pipeline", {
   chave_indice <- paste(indice_referencia$ano, indice_referencia$codmunres)
   posicao <- match(chave_serie, chave_indice)
 
-  # O índice e os blocos saem do CSV final, em percentis de 0 a 1
+  # O índice e os blocos saem do CSV final, invertidos de vulnerabilidade para VIDAS
   for (medida in MEDIDAS$medida) {
     coluna <- if (medida == "indice_final") "indice_mf_v1" else medida
     expect_equal(
       dados$series[[medida]],
-      100 * indice_referencia[[coluna]][posicao],
+      100 * (1 - indice_referencia[[coluna]][posicao]),
       tolerance = 1e-12
     )
   }
@@ -132,10 +132,10 @@ test_that("as categorias seguem os quintis e os rankings do ano", {
     )
     expect_setequal(unique(base$categoria), CATEGORIAS)
 
-    # A posição 1 é o município mais vulnerável, com empates pelo mínimo
+    # A posição 1 é o município com menor Índice VIDAS, com empates pelo mínimo
     expect_equal(
       base$pos_nac,
-      rank(-base$valor, ties.method = "min", na.last = "keep")
+      rank(base$valor, ties.method = "min", na.last = "keep")
     )
     expect_equal(unique(base$total_nac), sum(!is.na(base$valor)))
 
@@ -143,7 +143,7 @@ test_that("as categorias seguem os quintis e os rankings do ano", {
     iguais <- base[base$sigla_uf == "RO", ]
     expect_equal(
       iguais$pos_uf,
-      rank(-iguais$valor, ties.method = "min", na.last = "keep")
+      rank(iguais$valor, ties.method = "min", na.last = "keep")
     )
     expect_equal(unique(iguais$total_uf), sum(!is.na(iguais$valor)))
 
@@ -152,7 +152,7 @@ test_that("as categorias seguem os quintis e os rankings do ano", {
     macro <- macro[macro$macro_r_saude == macro$macro_r_saude[1], ]
     expect_equal(
       macro$pos_macro,
-      rank(-macro$valor, ties.method = "min", na.last = "keep")
+      rank(macro$valor, ties.method = "min", na.last = "keep")
     )
     expect_equal(unique(macro$total_macro), sum(!is.na(macro$valor)))
   }
@@ -166,7 +166,7 @@ test_that("o resumo do município alimenta o palco com índice, rankings e bloco
   # Conferindo o que o palco exibe contra a tabela do ano
   linha <- valores_ano(dados, ano_ref, "indice_final")
   linha <- linha[linha$codmunres == cod, ]
-  # O município padrão é o mais vulnerável do último ano
+  # O município padrão é o de menor Índice VIDAS do último ano
   expect_equal(linha$pos_nac, 1)
 
   municipio <- shiny::reactiveVal(cod)
@@ -331,7 +331,7 @@ test_that("grafico_evolucao destaca a série principal com área chapada e sem r
   expect_true(grepl("Diferença", tooltip, fixed = TRUE))
   expect_false(grepl("pts", tooltip, fixed = TRUE))
   expect_true(grepl("color:#5A6472;font-weight:600", tooltip, fixed = TRUE))
-  expect_false(grepl("IBISMA", tooltip, fixed = TRUE))
+  expect_false(grepl("Índice VIDAS", tooltip, fixed = TRUE))
 
   # O tooltip acompanha o cursor com transição mais curta que o padrão do echarts
   expect_equal(grafico$x$opts$tooltip$transitionDuration, 0.3)
@@ -457,7 +457,7 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
         jsonlite::fromJSON(saida, simplifyVector = FALSE)$x$opts
       }
 
-      # O IBISMA tem escala própria, cobrindo os dois índices sem cortá-los
+      # O Índice VIDAS tem escala própria, cobrindo os dois índices sem cortá-los
       expect_equal(
         opcoes_do_grafico(output$grafico_indice_final)$yAxis[[1]]$min,
         limites_indice$min
@@ -516,7 +516,7 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
       expect_true(grepl(nome_municipio(dados, principal), identificacao_indicadores, fixed = TRUE))
       expect_true(grepl(nome_municipio(dados, comparado), identificacao_indicadores, fixed = TRUE))
 
-      # Sem comparação o eixo do IBISMA segue apenas o município principal
+      # Sem comparação o eixo do Índice VIDAS segue apenas o município principal
       session$setInputs(comparar = "nenhum")
       limites_so_principal <- limites_medidas(series_principal_ref, "indice_final")
       expect_equal(
@@ -551,8 +551,8 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
 test_that("os títulos da evolução ficam só com o texto, sem bolinha de cor", {
   grade <- as.character(grade_evolucao_ui(shiny::NS("como")))
   # Os sete títulos continuam na grade, apenas como texto
-  expect_true(grepl("IBISMA", grade, fixed = TRUE))
-  expect_true(grepl("Blocos do IBISMA", grade, fixed = TRUE))
+  expect_true(grepl("Índice VIDAS", grade, fixed = TRUE))
+  expect_true(grepl("Blocos do Índice VIDAS", grade, fixed = TRUE))
   # A bolinha colorida e a variável de cor dela saíram dos cartões
   expect_false(grepl("evolucao-card__ponto", grade, fixed = TRUE))
   expect_false(grepl("--cor-medida", grade, fixed = TRUE))
@@ -568,17 +568,19 @@ test_that("formatadores usam a convenção brasileira", {
   expect_equal(formatar_numero(0.04), "0,0")
 })
 
-test_that("frase_percentil mostra o percentil com uma casa decimal", {
-  expect_match(frase_percentil(99.96), "100,0%")
-  expect_match(frase_percentil(100), "100,0%")
+test_that("frase_percentil mostra a parcela de municípios à frente", {
+  expect_match(frase_percentil(99.96), "0,0%")
+  expect_match(frase_percentil(100), "0,0%")
   expect_match(frase_percentil(50), "50,0%")
+  expect_match(frase_percentil(40), "60,0%")
+  expect_match(frase_percentil(40), "superior ao deste município")
   expect_match(frase_percentil(NA), "Sem dado")
 })
 
 test_that("paletas e cores seguem a configuração do projeto", {
   expect_setequal(names(PALETAS), MEDIDAS$medida)
   expect_equal(cor_medida("bloco1"), BLOCOS$cor[1])
-  expect_equal(cor_medida("indice_final"), COR_IBISMA)
+  expect_equal(cor_medida("indice_final"), COR_VIDAS)
   expect_equal(cor_categoria(NA_character_), COR_SEM_DADOS)
   expect_equal(cor_texto_sobre("#FFFFFF"), COR_AZUL_ESCURO)
   expect_equal(cor_texto_sobre("#0A1E3C"), "#FFFFFF")
@@ -612,28 +614,28 @@ test_that("opções de medida, ano e escopo do ranking estão completas", {
 })
 
 test_that("nome_medida prefixa os blocos com Bloco quando pedido", {
-  # O IBISMA nunca recebe o prefixo
-  expect_equal(nome_medida("indice_final", prefixo_bloco = TRUE), "IBISMA")
+  # O Índice VIDAS nunca recebe o prefixo
+  expect_equal(nome_medida("indice_final", prefixo_bloco = TRUE), "Índice VIDAS")
   expect_equal(
     nome_medida("bloco2", prefixo_bloco = TRUE),
-    "Bloco Planejamento reprodutivo"
+    "Bloco Planejamento Reprodutivo"
   )
   # Sem o prefixo, os nomes continuam como configurados
   expect_equal(
     nome_medida(c("indice_final", "bloco2")),
-    c("IBISMA", "Planejamento reprodutivo")
+    c("Índice VIDAS", "Planejamento Reprodutivo")
   )
 })
 
 test_that("tema_reactable adapta os destaques à cor da medida", {
-  # No IBISMA os destaques continuam roxos e com texto branco
+  # No Índice VIDAS os destaques continuam roxos e com texto branco
   ibisma <- tema_reactable("indice_final")
-  expect_equal(ibisma$highlightColor, misturar_cores(COR_IBISMA, "#FFFFFF", 0.94))
+  expect_equal(ibisma$highlightColor, misturar_cores(COR_VIDAS, "#FFFFFF", 0.94))
   expect_equal(
     ibisma$rowSelectedStyle$backgroundColor,
-    misturar_cores(COR_IBISMA, "#FFFFFF", 0.90)
+    misturar_cores(COR_VIDAS, "#FFFFFF", 0.90)
   )
-  expect_equal(ibisma$pageButtonActiveStyle$backgroundColor, COR_IBISMA)
+  expect_equal(ibisma$pageButtonActiveStyle$backgroundColor, COR_VIDAS)
   expect_equal(ibisma$pageButtonActiveStyle$color, "#FFFFFF")
 
   # Em um bloco, hover, linha selecionada e paginação usam a cor do bloco
@@ -668,9 +670,9 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
   ano <- max(dados$anos)
   foco <- municipio_padrao(dados)
 
-  # Ordenando os rankings como o módulo faz, para conferir as posições
+  # Ordenando os rankings como o módulo faz, do menor para o maior Índice VIDAS
   base_indice <- valores_ano(dados, ano, "indice_final")
-  ranking_indice <- base_indice[order(base_indice$valor, decreasing = TRUE, na.last = TRUE), ]
+  ranking_indice <- base_indice[order(base_indice$valor, decreasing = FALSE, na.last = TRUE), ]
   outro <- ranking_indice$codmunres[2]
 
   # Escolhendo uma UF que não contém o segundo colocado
@@ -707,7 +709,7 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
         medida = "indice_final",
         escopo = "nacional"
       )
-      # O município padrão lidera o índice final e já vem marcado no próprio render
+      # O município padrão abre o ranking do índice e já vem marcado no próprio render
       expect_equal(destaque_do_render(), 0)
 
       # Trocando o município em foco fora da tabela, a seleção acompanha
@@ -722,7 +724,7 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
       expect_equal(municipio(), outro)
 
       base_bloco <- valores_ano(dados, ano, "bloco6")
-      ranking_bloco <- base_bloco[order(base_bloco$valor, decreasing = TRUE, na.last = TRUE), ]
+      ranking_bloco <- base_bloco[order(base_bloco$valor, decreasing = FALSE, na.last = TRUE), ]
       expect_equal(
         destaque_do_render(),
         which(ranking_bloco$codmunres == outro) - 1L
@@ -767,19 +769,55 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
   )
 })
 
-test_that("o ranking descreve o clique na tabela logo acima dela", {
+test_that("o ranking explica a primeira posição e resume acima da tabela", {
   ui <- as.character(mod_onde_ui("onde"))
-  # A dica usa a classe de descrição com o modificador de respiro da tabela
+  # O título da seção fala em desafios, e não em valores baixos
+  expect_true(grepl("Onde o Índice VIDAS revela maiores desafios?", ui, fixed = TRUE))
+  # A descrição padrão já vem carregada no HTML, antes do output dos blocos
+  expect_true(grepl("ranking-descricao__padrao", ui, fixed = TRUE))
   expect_true(grepl(
-    paste0(
-      'class="bloco-descricao bloco-descricao--tabela"',
-      ">Clique em um município para destacá-lo em todo o painel.</p>"
-    ),
+    "A primeira posição indica o município com menor Índice VIDAS",
     ui,
     fixed = TRUE
   ))
-  # O resumo fica sem a classe de descrição
-  expect_false(grepl("esqueleto-slot--texto bloco-descricao", ui, fixed = TRUE))
+  posicao_output <- regexpr('id="onde-ranking_descricao"', ui, fixed = TRUE)
+  posicao_padrao <- regexpr("ranking-descricao__padrao", ui, fixed = TRUE)
+  expect_true(posicao_output < posicao_padrao)
+  # O resumo fica logo acima da tabela, com a classe própria
+  expect_true(grepl("ranking-resumo", ui, fixed = TRUE))
+  posicao_resumo <- regexpr("ranking-resumo", ui, fixed = TRUE)
+  posicao_tabela <- regexpr('id="onde-ranking"', ui, fixed = TRUE)
+  expect_true(posicao_resumo < posicao_tabela)
+  # A antiga dica de clique e a nota de rodapé saíram do bloco
+  expect_false(grepl("bloco-descricao--tabela", ui, fixed = TRUE))
+  expect_false(grepl("bloco-nota", ui, fixed = TRUE))
+})
+
+test_that("a descrição e a legenda acompanham a medida escolhida", {
+  dados <- dados_ibisma()
+  municipio <- shiny::reactiveVal(municipio_padrao(dados))
+  shiny::testServer(
+    mod_onde_server,
+    args = list(dados = dados, municipio = municipio),
+    {
+      session$setInputs(
+        ano = as.character(max(dados$anos)),
+        medida = "indice_final",
+        escopo = "nacional"
+      )
+      # No índice, o output fica vazio e a descrição padrão do HTML permanece
+      expect_null(output$ranking_descricao)
+      legenda <- as.character(output$legenda$html)
+      expect_true(grepl("Nível do Índice VIDAS", legenda, fixed = TRUE))
+
+      # Trocando para um bloco, a descrição e a legenda acompanham a medida
+      session$setInputs(medida = "bloco3")
+      texto <- as.character(output$ranking_descricao$html)
+      expect_true(grepl("menor valor no Bloco Pré-natal", texto, fixed = TRUE))
+      legenda <- as.character(output$legenda$html)
+      expect_true(grepl("Nível do Bloco Pré-natal", legenda, fixed = TRUE))
+    }
+  )
 })
 
 test_that("seletor_inline controla a busca e traduz os textos", {
@@ -811,7 +849,7 @@ test_that("atualizar_municipios envia os dados compactos sem aviso de serializa�
   mensagem <- capturada$mensagem
   # Os dados vão em vetores alinhados à malha, sem HTML de tooltip
   expect_equal(mensagem$id, "mapa")
-  expect_equal(mensagem$medida, "IBISMA")
+  expect_equal(mensagem$medida, "Índice VIDAS")
   expect_length(mensagem$municipios, nrow(malha))
   expect_length(mensagem$ufs, nrow(malha))
   expect_length(mensagem$valores, nrow(malha))
@@ -937,12 +975,12 @@ test_that("mensagem_mapa usa a paleta e as cores de texto da medida exibida", {
   expect_false(identical(msg_bloco$paleta, msg_indice$paleta))
 })
 
-test_that("municipio_padrao escolhe o mais vulnerável do último ano", {
+test_that("municipio_padrao escolhe o menor Índice VIDAS do último ano", {
   dados <- dados_ibisma()
   base <- valores_ano(dados, max(dados$anos), "indice_final")
   expect_equal(
     municipio_padrao(dados),
-    base$codmunres[which.max(base$valor)]
+    base$codmunres[which.min(base$valor)]
   )
 })
 
@@ -1202,8 +1240,8 @@ test_that("legenda_categorias omite Sem dados por padrão", {
 })
 
 test_that("as rampas de PALETAS seguem a configuração do projeto", {
-  # O índice tem a cor de identificação no topo da rampa
-  expect_equal(unname(PALETAS$indice_final[5]), COR_IBISMA)
+  # O índice tem a cor de identificação no início da rampa, onde ficam as prioridades
+  expect_equal(unname(PALETAS$indice_final[1]), COR_VIDAS)
 
   # Cada bloco tem a própria rampa e a categoria central é a cor de identificação
   for (m in BLOCOS$medida) {
@@ -1261,7 +1299,7 @@ test_that("grafico_petalas monta as seis pétalas com tooltip", {
     6
   )
   expect_true(grepl("tooltip-petala", html))
-  expect_true(grepl("Planejamento reprodutivo", html))
+  expect_true(grepl("Planejamento Reprodutivo", html))
   # Os valores dentro das pétalas usam sempre uma casa decimal
   expect_true(grepl(">100,0</text>", html, fixed = TRUE))
   expect_true(grepl(">10,0</text>", html, fixed = TRUE))
@@ -1372,15 +1410,15 @@ test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
   ))
   expect_true(grepl("Município principal", html, fixed = TRUE))
   expect_true(grepl("svg-petalas", html, fixed = TRUE))
-  expect_true(grepl(paste0("IBISMA em ", ano), html, fixed = TRUE))
+  expect_true(grepl(paste0("Índice VIDAS em ", ano), html, fixed = TRUE))
   expect_true(grepl("perfil-indice", html, fixed = TRUE))
   expect_true(grepl("perfil-rankings", html, fixed = TRUE))
   # Os três rankings aparecem na ordem pedida
-  expect_true(grepl("Ranking na macrorregião", html, fixed = TRUE))
-  expect_true(grepl("Ranking na UF", html, fixed = TRUE))
-  expect_true(grepl("Ranking Brasil", html, fixed = TRUE))
+  expect_true(grepl("Na macrorregião de saúde", html, fixed = TRUE))
+  expect_true(grepl("Na UF", html, fixed = TRUE))
+  expect_true(grepl("No Brasil", html, fixed = TRUE))
   # O ranking estadual não repete o nome da UF no título
-  expect_false(grepl("Ranking na UF (", html, fixed = TRUE))
+  expect_false(grepl("Na UF (", html, fixed = TRUE))
   # Os valores territoriais guardam o texto completo para o tooltip condicional
   expect_true(grepl("metrica-tooltip", html, fixed = TRUE))
   expect_true(grepl("data-tooltip-texto", html, fixed = TRUE))
@@ -1436,7 +1474,7 @@ test_that("esqueletos preservam a estrutura de cada output", {
     6
   )
   # O esqueleto não deve repetir nenhum valor do conteúdo real
-  expect_false(grepl("IBISMA em", palco))
+  expect_false(grepl("Índice VIDAS em", palco))
 
   # A identificação da evolução reserva a linha do nome e do período
   identificacao <- as.character(esqueleto_identificacao())

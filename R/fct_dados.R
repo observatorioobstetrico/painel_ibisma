@@ -1,5 +1,5 @@
 # =============================================================================
-#   CONSULTA DOS DADOS PRONTOS DO IBISMA
+#   CONSULTA DOS DADOS PRONTOS DO PAINEL
 #   O painel não faz contas sobre a base bruta: lê os arquivos gerados por
 #   data-raw/cria_rda.R e devolve os recortes usados pelas seções.
 # =============================================================================
@@ -7,7 +7,7 @@
 # Criando um cache em memória para não reler os arquivos a cada sessão
 .ibisma_cache <- new.env(parent = emptyenv())
 
-#' Definindo uma função que obtém a base preparada do IBISMA com cache
+#' Definindo uma função que obtém a base preparada do painel com cache
 #'
 #' @return Lista com o cadastro de municípios, os anos e as séries temporais.
 #' Usada em: app_server.R (abertura do app), fct_dados.R (internamente) e mod_como.R.
@@ -69,14 +69,14 @@ valores_ano <- function(dados, ano, medida) {
 #' Definindo uma função que descobre o município padrão de abertura do painel
 #'
 #' @param dados Lista lida por dados_ibisma().
-#' @return Código do município mais vulnerável do ano mais recente.
+#' @return Código do município com o menor Índice VIDAS do ano mais recente.
 #' Usada em: app_server.R (município de abertura) e mod_como.R (valor inicial do seletor).
 #' @noRd
 municipio_padrao <- function(dados = dados_ibisma()) {
-  # Buscando o município com o maior IBISMA no último ano disponível
+  # Abrindo o painel no município prioritário, com o menor Índice VIDAS do ano
   ano <- max(dados$anos)
   base <- valores_ano(dados, ano, "indice_final")
-  base$codmunres[which.max(base$valor)]
+  base$codmunres[which.min(base$valor)]
 }
 
 #' Definindo uma função que obtém as séries das medidas e dos indicadores de um município

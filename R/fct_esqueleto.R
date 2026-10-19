@@ -310,13 +310,13 @@ esqueleto_petalas <- function() {
   )
 }
 
-#' Definindo uma função que monta o esqueleto do índice do IBISMA
+#' Definindo uma função que monta o esqueleto do Índice VIDAS
 #'
 #' @return Elemento HTML com rótulo, valor central e frase neutros.
 #' Usada em: fct_esqueleto.R (esqueleto_palco).
 #' @noRd
 esqueleto_indice <- function() {
-  # Mantendo a mesma divisão do bloco real do índice
+  # Mantendo a mesma divisão do bloco real do Índice VIDAS
   htmltools::tags$div(
     class = "perfil-indice",
     htmltools::tags$span(
@@ -479,7 +479,7 @@ esqueleto_grafico_svg <- function(altura) {
 
 #' Definindo uma função que monta o esqueleto da grade de evolução temporal
 #'
-#' @return Elemento HTML com o cartão do IBISMA e os seis cartões dos blocos.
+#' @return Elemento HTML com o cartão do Índice VIDAS e os seis cartões dos blocos.
 #' Usada em: mod_como.R (esqueleto da grade da evolução).
 #' @noRd
 esqueleto_grade_evolucao <- function() {

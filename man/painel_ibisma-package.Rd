@@ -4,9 +4,9 @@
 \name{painel_ibisma-package}
 \alias{painel_ibisma}
 \alias{painel_ibisma-package}
-\title{painel_ibisma: Painel do Indice Brasileiro de Inseguranca em Saude Materna}
+\title{painel_ibisma: Painel do Índice VIDAS}
 \description{
-Pacote que implementa o painel interativo do IBISMA com Shiny e golem.
+Pacote que implementa o painel interativo do Índice VIDAS com Shiny e golem.
 }
 \author{
 \strong{Maintainer}: firstname lastname \email{your@email.com}

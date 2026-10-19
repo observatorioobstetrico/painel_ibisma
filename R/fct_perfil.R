@@ -37,10 +37,10 @@ metrica_hero <- function(rotulo, valor, detalhe = NULL, tooltip = FALSE) {
   )
 }
 
-#' Definindo uma função que produz a frase de leitura do percentil do IBISMA
+#' Definindo uma função que produz a frase de leitura do percentil do Índice VIDAS
 #'
 #' @param valor Valor do índice na escala 0 a 100.
-#' @return Texto explicando o percentil de vulnerabilidade.
+#' @return Texto comparando o município aos demais municípios brasileiros.
 #' Usada em: perfil_indice().
 #' @noRd
 frase_percentil <- function(valor) {
@@ -48,10 +48,10 @@ frase_percentil <- function(valor) {
   if (is.na(valor)) {
     return("Sem dado disponível para este ano.")
   }
-  # Usando a mesma casa decimal dos demais valores do painel
+  # Mostrando a parcela de municípios que está à frente deste no índice
   paste0(
-    "acima de ", formatar_numero(valor),
-    "% dos municípios em insegurança em saúde materna"
+    formatar_numero(100 - valor),
+    "% dos municípios brasileiros têm Índice VIDAS superior ao deste município"
   )
 }
 
@@ -69,7 +69,7 @@ perfil_indice <- function(resumo, ano) {
     # Nomeando o valor em destaque, com a categoria e a leitura do percentil
     htmltools::tags$span(
       class = "perfil-indice__rotulo",
-      paste0("IBISMA em ", ano)
+      paste0("Índice VIDAS em ", ano)
     ),
     htmltools::tags$div(
       class = "perfil-indice__linha perfil-indice__linha--centro",
@@ -102,7 +102,7 @@ perfil_rankings <- function(resumo) {
     htmltools::tags$div(
       class = "perfil-rankings__item perfil-rankings__item--macro",
       metrica_hero(
-        "Ranking na macrorregião",
+        "Na macrorregião de saúde",
         rotulo_posicao(resumo$pos_macro, resumo$total_macro)
       )
     ),
@@ -110,7 +110,7 @@ perfil_rankings <- function(resumo) {
     htmltools::tags$div(
       class = "perfil-rankings__item perfil-rankings__item--uf",
       metrica_hero(
-        "Ranking na UF",
+        "Na UF",
         rotulo_posicao(resumo$pos_uf, resumo$total_uf)
       )
     ),
@@ -118,7 +118,7 @@ perfil_rankings <- function(resumo) {
     htmltools::tags$div(
       class = "perfil-rankings__item perfil-rankings__item--brasil",
       metrica_hero(
-        "Ranking Brasil",
+        "No Brasil",
         rotulo_posicao(resumo$pos_nac, resumo$total_nac)
       )
     )

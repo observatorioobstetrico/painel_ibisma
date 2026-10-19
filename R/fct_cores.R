@@ -30,7 +30,7 @@ cor_linha_medida <- function(medida) {
   cor_medida(medida)
 }
 
-#' Definindo uma função que obtém a cor de uma categoria de vulnerabilidade
+#' Definindo uma função que obtém a cor de uma faixa do Índice VIDAS
 #'
 #' @param categoria Vetor de categorias ("Muito baixo" ... "Muito alto").
 #' @param medida Identificador da medida que define a rampa de cores.

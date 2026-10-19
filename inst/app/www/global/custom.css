@@ -90,7 +90,7 @@ body, .content-wrapper, .main-header, .main-sidebar {
 .fonte-pequena          { font-size: var(--fonte-pequena-size) !important; }
 
 /* =============================================================================
-     PAINEL IBISMA — IDENTIDADE E LAYOUT
+     PAINEL VIDAS — IDENTIDADE E LAYOUT
      Estilos próprios das seções do painel: navegação por âncoras, controles
      em frase, blocos de conteúdo, mapa, ranking, perfil e rodapé.
    ============================================================================= */
@@ -119,7 +119,7 @@ body, .content-wrapper, .main-header, .main-sidebar {
   --cor-azul-medio-rgb: 30 90 160;
   --cor-azul-claro: #32A0FF;
   --cor-azul-claro-rgb: 50 160 255;
-  --cor-roxo-ibisma: #4B1D73;
+  --cor-roxo-vidas: #4B1D73;
   --cor-amarelo-rgb: 250 200 15;
   --cor-branco: #FFFFFF;
   --cor-branco-rgb: 255 255 255;
@@ -786,16 +786,15 @@ input:focus-visible,
   max-width: 46rem;
 }
 
-/* Separando levemente a dica da tabela do ranking logo abaixo dela */
-.painel-bloco--ranking .bloco-descricao--tabela {
-  margin-bottom: 0.9rem;
+/* Escondendo a descrição padrão quando o bloco selecionado traz a própria */
+.ranking-descricao > .shiny-html-output:not(:empty) + .ranking-descricao__padrao {
+  display: none;
 }
 
-/* Estilizando as notas de rodapé dos blocos */
-.bloco-nota {
-  font-size: var(--fonte-pequena-size);
-  color: var(--cor-texto-suave);
-  margin: 0.75rem 0 0 0;
+/* Alinhando o resumo do ranking logo acima da tabela */
+.ranking-resumo {
+  margin: 0 0 1rem 0;
+  font-size: var(--fonte-grande-size);
 }
 
 /* ---------------------------------------------------------------- mapa */
@@ -1201,12 +1200,12 @@ input:focus-visible,
   justify-content: center;
 }
 
-/* Dando destaque ao número do IBISMA */
+/* Dando destaque ao número do Índice VIDAS */
 .perfil-indice__valor {
   font-size: var(--fonte-numero-destaque-size);
   font-weight: 700;
   line-height: 1;
-  color: var(--cor-roxo-ibisma);
+  color: var(--cor-roxo-vidas);
 }
 
 /* Explicando a escala do número em destaque */
@@ -1329,7 +1328,7 @@ input:focus-visible,
 
 /* ------------------------------------------- grade da evolução */
 
-/* Organizando o IBISMA e os seis blocos em pequenos múltiplos */
+/* Organizando o Índice VIDAS e os seis blocos em pequenos múltiplos */
 .evolucao-grade {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1717,7 +1716,7 @@ input:focus-visible,
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background-color: var(--cor-medida, var(--cor-roxo-ibisma));
+  background-color: var(--cor-medida, var(--cor-roxo-vidas));
   margin-right: 0.45rem;
   flex: 0 0 auto;
 }
@@ -1873,9 +1872,9 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
 
 /* Reservando o lugar dos resumos curtos em texto */
 .esqueleto--texto {
-  width: 15rem;
-  max-width: 90%;
-  height: 0.85em;
+  width: 32rem;
+  max-width: 100%;
+  height: 1.15em;
 }
 
 /* Mantendo o resumo e a barra na mesma linha da frase */

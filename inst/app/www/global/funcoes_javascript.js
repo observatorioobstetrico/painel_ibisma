@@ -1,5 +1,5 @@
 /* =============================================================================
-   FUNÇÕES JAVASCRIPT DO PAINEL IBISMA
+   FUNÇÕES JAVASCRIPT DO PAINEL VIDAS
    Reúne os handlers do mapa (desenho, atualização de cores e tooltips e ajuste
    do canvas à resolução da tela), a abertura animada das duas colunas de
    comparação e a marcação da seção visível na barra de navegação.

@@ -40,10 +40,10 @@ mod_onde_ui <- function(id) {
       # Cabeçalho editorial da seção
       titulo_secao(
         eyebrow = "Onde?",
-        titulo = "Onde está a insegurança em saúde materna?",
+        titulo = "Onde o Índice VIDAS revela maiores desafios?",
         descricao = paste(
-          "O IBISMA varia de 0 a 100: quanto maior o valor,",
-          "maior a insegurança em saúde materna do município."
+          "O Índice VIDAS varia de 0 a 100: quanto menor o valor,",
+          "maior a prioridade de atenção e piores as condições de saúde das mulheres no município."
         )
       ),
       # Controles principais escritos como uma frase
@@ -95,11 +95,17 @@ mod_onde_ui <- function(id) {
           htmltools::tags$div(
             class = "bloco-cabecalho",
             htmltools::tags$h3(class = "bloco-titulo", "Ranking dos municípios"),
-            # Mantendo o resumo com o próprio estilo, sem classe de descrição
-            esqueleto_slot(
-              shiny::textOutput(ns("ranking_resumo"), inline = TRUE),
-              esqueleto_texto(),
-              classe = "esqueleto-slot--texto"
+            # Explicando a primeira posição; o texto padrão só muda quando há bloco
+            htmltools::tags$div(
+              class = "ranking-descricao",
+              shiny::uiOutput(ns("ranking_descricao")),
+              htmltools::tags$p(
+                class = "bloco-descricao ranking-descricao__padrao",
+                paste(
+                  "A primeira posição indica o município com menor Índice VIDAS",
+                  "do escopo escolhido, que é a maior prioridade de atenção."
+                )
+              )
             )
           ),
           # Controle de escopo do ranking (Brasil ou uma UF)
@@ -108,20 +114,17 @@ mod_onde_ui <- function(id) {
             htmltools::tags$span(class = "controle-texto", "Ranking para"),
             seletor_inline(ns("escopo"), escopos, selected = "nacional")
           ),
-          # Explicando o clique na tabela logo acima dela, com leve respiro
-          htmltools::tags$p(
-            class = "bloco-descricao bloco-descricao--tabela",
-            "Clique em um município para destacá-lo em todo o painel."
+          # Resumindo o total de municípios, o ano e a medida logo acima da tabela
+          esqueleto_slot(
+            shiny::textOutput(ns("ranking_resumo"), inline = TRUE),
+            esqueleto_texto(),
+            classe = "ranking-resumo"
           ),
           # Tabela interativa com a lista de municípios e esqueleto empilhado
           esqueleto_slot(
             reactable::reactableOutput(ns("ranking")),
             esqueleto_ranking(),
             classe = "esqueleto-slot--ranking"
-          ),
-          htmltools::tags$p(
-            class = "bloco-nota",
-            "Valores de 0 a 100. A posição 1º indica o município mais vulnerável do escopo escolhido."
           )
         )
       )
@@ -240,9 +243,13 @@ mod_onde_server <- function(id, dados, municipio) {
 
     # Recriando a legenda sempre que a medida exibida mudar
     output$legenda <- shiny::renderUI({
+      medida <- if (is.null(input$medida)) "indice_final" else input$medida
       legenda_categorias(
-        paleta = PALETAS[[input$medida]],
-        titulo = "Nível de insegurança"
+        paleta = PALETAS[[medida]],
+        titulo = paste0(
+          "Nível do ",
+          nome_medida(medida, prefixo_bloco = TRUE)
+        )
       )
     })
 
@@ -256,7 +263,8 @@ mod_onde_server <- function(id, dados, municipio) {
       if (!is.null(escopo) && !identical(escopo, "nacional")) {
         base <- base[base$sigla_uf == escopo, ]
       }
-      base <- base[order(base$valor, decreasing = TRUE, na.last = TRUE), ]
+      # Colocando primeiro os menores valores, que são as maiores prioridades
+      base <- base[order(base$valor, decreasing = FALSE, na.last = TRUE), ]
       row.names(base) <- NULL
       base
     })
@@ -268,11 +276,27 @@ mod_onde_server <- function(id, dados, municipio) {
       # Verificando se o município em foco continua presente no novo ranking
       presente <- !is.null(selecionado) && !is.na(selecionado) &&
         selecionado %in% tabela$codmunres
-      # Resetando para a primeira colocada quando o município sai do ranking
+      # Resetando para o primeiro colocado quando o município sai do ranking
       if (!presente && nrow(tabela) > 0) {
         municipio(tabela$codmunres[1])
       }
     }, ignoreInit = TRUE)
+
+    # Trocando a descrição padrão apenas quando um bloco estiver selecionado
+    output$ranking_descricao <- shiny::renderUI({
+      medida <- input$medida
+      if (is.null(medida) || identical(medida, "indice_final")) {
+        return(NULL)
+      }
+      htmltools::tags$p(
+        class = "bloco-descricao",
+        paste0(
+          "A primeira posição indica o município com menor valor no ",
+          nome_medida(medida, prefixo_bloco = TRUE),
+          " do escopo escolhido, que é a maior prioridade de atenção."
+        )
+      )
+    })
 
     # Escrevendo o texto com o total de municípios do ranking
     output$ranking_resumo <- shiny::renderText({
@@ -354,7 +378,7 @@ mod_onde_server <- function(id, dados, municipio) {
             )
           ),
           categoria_html = reactable::colDef(
-            name = "Categoria", width = 118, html = TRUE, sortable = FALSE
+            name = "Faixa", width = 118, html = TRUE, sortable = FALSE
           ),
           categoria = reactable::colDef(show = FALSE),
           codmunres = reactable::colDef(show = FALSE)

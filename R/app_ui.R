@@ -34,6 +34,7 @@ app_ui <- function(request) {
 # -----------------------------------------------------------------------------
 #   COMPONENTES DA CASCA DO PAINEL
 #   Tema, barra de navegação e rodapé, usados apenas pela interface do app.
+#   Os nomes internos mantêm a sigla histórica do pacote; o índice exibido é o VIDAS.
 # -----------------------------------------------------------------------------
 
 #' Definindo uma função que monta o tema bslib do painel
@@ -45,7 +46,7 @@ tema_ibisma <- function() {
     version = 5,
     bg = "#FFFFFF",
     fg = COR_AZUL_ESCURO,
-    primary = COR_IBISMA,
+    primary = COR_VIDAS,
     secondary = COR_AZUL_CLARO,
     base_font = bslib::font_collection(
       "'Source Sans Pro'",
@@ -87,11 +88,11 @@ navbar_ibisma <- function() {
         ),
         htmltools::tags$span(
           class = "navbar-brand__identidade",
-          htmltools::tags$span(class = "navbar-brand__texto", "IBISMA"),
+          htmltools::tags$span(class = "navbar-brand__texto", "VIDAS"),
           # Mantendo a descrição do índice visível apenas quando houver espaço
           htmltools::tags$span(
             class = "navbar-brand__descricao d-none d-lg-block",
-            "Índice Brasileiro de Insegurança em Saúde Materna"
+            "Vigilância dos Indicadores, Determinantes e Assistência à Saúde das Mulheres"
           )
         )
       ),
@@ -182,8 +183,8 @@ rodape_ibisma <- function() {
         htmltools::tags$p(
           class = "rodape-nota",
           "Este painel está em desenvolvimento. ",
-          "O IBISMA é um índice relativo: seus valores representam o percentil de ",
-          "vulnerabilidade dos municípios brasileiros, não uma medida absoluta."
+          "O Índice VIDAS é um índice relativo: seus valores representam a posição ",
+          "dos municípios brasileiros em relação aos demais, não uma medida absoluta de saúde."
         )
       )
     )
@@ -213,12 +214,14 @@ golem_add_external_resources <- function() {
 
   tags$head(
     favicon(),
-    tags$title("IBISMA — Índice Brasileiro de Insegurança em Saúde Materna"),
+    tags$title(
+      "Índice VIDAS — Vigilância dos Indicadores, Determinantes e Assistência à Saúde das Mulheres"
+    ),
     tags$meta(
       name = "description",
       content = paste0(
-        "Índice Brasileiro de Insegurança em Saúde Materna: ",
-        "painel interativo com o índice e os seis blocos que compõem o IBISMA."
+        "Painel interativo do Índice VIDAS, com o índice e os seis blocos ",
+        "que acompanham as condições de saúde das mulheres nos municípios brasileiros."
       )
     ),
     # Carregando a fonte institucional do Google Fonts

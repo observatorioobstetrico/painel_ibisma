@@ -1,6 +1,6 @@
-#' painel_ibisma: Painel do Indice Brasileiro de Inseguranca em Saude Materna
+#' painel_ibisma: Painel do Índice VIDAS
 #'
-#' Pacote que implementa o painel interativo do IBISMA com Shiny e golem.
+#' Pacote que implementa o painel interativo do Índice VIDAS com Shiny e golem.
 #'
 #' @keywords internal
 #' @import shiny
