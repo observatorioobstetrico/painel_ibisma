@@ -5,6 +5,6 @@ account: observatorioobstetrico
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 17948703
-bundleId: 12681918
+bundleId: 12708014
 url: https://observatorioobstetrico.shinyapps.io/painel_ibisma/
 version: 1
