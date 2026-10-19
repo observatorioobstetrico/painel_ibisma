@@ -18,8 +18,8 @@ CSS_TOOLTIP <- paste0(
 ALTURA_GRAFICO_IBISMA <- 240L
 ALTURA_GRAFICO_BLOCO <- 170L
 
-# Definindo a altura dos gráficos de evolução dos indicadores
-ALTURA_GRAFICO_INDICADOR <- 160L
+# Definindo a altura dos gráficos de evolução dos indicadores, igual à dos blocos
+ALTURA_GRAFICO_INDICADOR <- ALTURA_GRAFICO_BLOCO
 
 # Definindo a largura mínima para manter os rótulos de ano na horizontal
 LARGURA_ROTULOS_ANOS <- 340L

@@ -589,9 +589,14 @@ esqueleto_indicadores <- function() {
     altura <- ALTURA_GRAFICO_INDICADOR
     htmltools::tags$div(
       class = "indicador-card esqueleto--card-evolucao",
-      htmltools::tags$h4(
-        class = "indicador-card__titulo",
-        esqueleto_barra("7rem", "0.55em")
+      htmltools::tags$div(
+        class = "indicador-card__cabecalho",
+        htmltools::tags$h4(
+          class = "indicador-card__titulo",
+          esqueleto_barra("7rem", "0.55em")
+        ),
+        # Reservando a chip do sentido de interpretação do indicador
+        esqueleto_barra("4.5rem", "1.25em", "esqueleto__barra--selo")
       ),
       htmltools::tags$div(
         class = "esqueleto__grafico",

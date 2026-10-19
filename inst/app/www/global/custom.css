@@ -1801,19 +1801,50 @@ input:focus-visible,
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  padding: 0.85rem 1rem 0.6rem 1rem;
+  padding: 0.85rem 1rem 0rem 1rem;
   background-color: var(--cor-branco);
   border: 1px solid var(--cor-linha);
   border-radius: 14px;
 }
 
+/* Alinhando o título e a chip do sentido no topo do cartão */
+.indicador-card__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 /* Estilizando o título de cada cartão de indicador */
 .indicador-card__titulo {
+  flex: 1 1 auto;
   font-size: var(--fonte-media-size);
   font-weight: 600;
   color: var(--cor-azul-escuro);
   line-height: 1.35;
   margin: 0;
+}
+
+/* Mantendo a chip do sentido discreta, com fundo neutro e texto suave */
+.indicador-card__sentido {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--cor-fundo-controles);
+  color: var(--cor-texto-suave);
+  font-size: var(--fonte-aviso-size);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* Mantendo a seta na mesma cor do texto da chip */
+.indicador-card__sentido-seta {
+  color: inherit;
+  font-weight: 700;
 }
 
 /* Empurrando o gráfico para o rodapé do cartão, para alinhar todos os eixos */

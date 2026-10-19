@@ -88,6 +88,37 @@ badge_categoria_html <- function(categorias, medida = "indice_final") {
   )
 }
 
+#' Definindo uma função que monta a chip do sentido de interpretação de um indicador
+#'
+#' @param protetor Indica se valores maiores são favoráveis ao Índice VIDAS.
+#' @return Elemento HTML da chip com a seta e o sentido do indicador.
+#' Usada em: mod_como.R (cartões dos indicadores do bloco).
+#' @noRd
+chip_sentido_indicador <- function(protetor) {
+  # Escolhendo a seta, o rótulo e a explicação conforme o sentido no índice
+  maior_melhor <- isTRUE(protetor)
+  htmltools::tags$span(
+    class = paste0(
+      "indicador-card__sentido ",
+      if (maior_melhor) "indicador-card__sentido--maior" else "indicador-card__sentido--menor"
+    ),
+    # Ativando a tooltip padrão do painel no lugar da tooltip nativa do navegador
+    `data-bs-toggle` = "tooltip",
+    # Explicando a leitura em uma frase completa ao passar o mouse
+    title = if (maior_melhor) {
+      "Neste indicador, valores maiores indicam melhores condições."
+    } else {
+      "Neste indicador, valores menores indicam melhores condições."
+    },
+    htmltools::tags$span(
+      class = "indicador-card__sentido-seta",
+      `aria-hidden` = "true",
+      if (maior_melhor) "↑" else "↓"
+    ),
+    if (maior_melhor) "Maior é melhor" else "Menor é melhor"
+  )
+}
+
 #' Definindo uma função que exibe um estado vazio com mensagem amigável
 #'
 #' @param mensagem Texto explicativo.

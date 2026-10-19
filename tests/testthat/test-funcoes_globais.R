@@ -1771,6 +1771,25 @@ test_that("as consultas do dicionário devolvem o recorte pedido", {
   expect_false(info_indicador("tx_homicidio_100mil")$protetor)
 })
 
+test_that("a chip de sentido segue o protetor do indicador", {
+  # Indicadores protetores sobem quando o município melhora
+  maior <- as.character(chip_sentido_indicador(TRUE))
+  expect_true(grepl("indicador-card__sentido--maior", maior, fixed = TRUE))
+  expect_true(grepl("Maior é melhor", maior, fixed = TRUE))
+  expect_true(grepl("↑", maior, fixed = TRUE))
+  expect_true(grepl('data-bs-toggle="tooltip"', maior, fixed = TRUE))
+
+  # Os demais indicadores caem quando o município melhora
+  menor <- as.character(chip_sentido_indicador(FALSE))
+  expect_true(grepl("indicador-card__sentido--menor", menor, fixed = TRUE))
+  expect_true(grepl("Menor é melhor", menor, fixed = TRUE))
+  expect_true(grepl("↓", menor, fixed = TRUE))
+})
+
+test_that("os gráficos dos indicadores acompanham a altura dos blocos", {
+  expect_equal(ALTURA_GRAFICO_INDICADOR, ALTURA_GRAFICO_BLOCO)
+})
+
 test_that("tem_indicadores exige a base reconstruída por completo", {
   series_fake <- data.frame(codmunres = 1L, ano = 2020L)
   for (indicador in INDICADORES$indicador) {
@@ -1912,6 +1931,11 @@ test_that("o esqueleto dos indicadores reserva os cartões do bloco padrão", {
     lengths(regmatches(indicadores_esq, gregexpr("esqueleto__grafico-margem", indicadores_esq))),
     5
   )
+  # A chip do sentido também é reservada no cabeçalho dos cartões
+  expect_equal(
+    lengths(regmatches(indicadores_esq, gregexpr("esqueleto__barra--selo", indicadores_esq))),
+    5
+  )
 })
 
 test_that("o módulo exibe os indicadores do bloco selecionado", {
@@ -1936,6 +1960,12 @@ test_that("o módulo exibe os indicadores do bloco selecionado", {
       for (indicador in indicadores_do_bloco("bloco1")$indicador) {
         expect_true(grepl(paste0("indicador_", indicador), cartoes, fixed = TRUE))
       }
+
+      # O Social mistura indicadores de maior e de menor melhor
+      expect_true(grepl("indicador-card__sentido--maior", cartoes, fixed = TRUE))
+      expect_true(grepl("indicador-card__sentido--menor", cartoes, fixed = TRUE))
+      expect_true(grepl("Maior é melhor", cartoes, fixed = TRUE))
+      expect_true(grepl("Menor é melhor", cartoes, fixed = TRUE))
 
       # Trocando o bloco, a grade passa a trazer os indicadores do bloco pedido
       session$setInputs(bloco = "bloco3")

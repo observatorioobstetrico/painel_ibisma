@@ -458,9 +458,14 @@ mod_como_server <- function(id, dados, municipio) {
         htmltools::tags$div(
           class = "indicador-card",
           style = paste0("--cor-bloco:", cor_medida(info$bloco), ";"),
-          htmltools::tags$h4(
-            class = "indicador-card__titulo",
-            info$nome
+          htmltools::tags$div(
+            class = "indicador-card__cabecalho",
+            htmltools::tags$h4(
+              class = "indicador-card__titulo",
+              info$nome
+            ),
+            # Indicando ao lado do título se o melhor é subir ou descer no valor
+            chip_sentido_indicador(info$protetor)
           ),
           if (indicador_tem_valor(indicador)) {
             echarts4r::echarts4rOutput(

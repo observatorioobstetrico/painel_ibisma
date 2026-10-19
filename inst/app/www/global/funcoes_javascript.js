@@ -313,16 +313,17 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   }
 })();
 
-/* Inicializando as tooltips das pétalas e dos campos territoriais cortados */
+/* Inicializando as tooltips das pétalas, dos campos territoriais e da chip de sentido */
 (function () {
   /* Reunindo os seletores das tooltips ricas e dos campos com texto próprio */
   var SELETOR_PETALAS = '.grupo-petala[data-bs-toggle="tooltip"]';
   var SELETOR_CHIPS = '.perfil-indice__chip[data-bs-toggle="tooltip"]';
   var SELETOR_INFO = '.perfil-palco__info[data-bs-toggle="tooltip"]';
+  var SELETOR_SENTIDO = '.indicador-card__sentido[data-bs-toggle="tooltip"]';
   var SELETOR_BARRAS = '.resultado-blocos__trilho[data-bs-toggle="tooltip"]';
   var SELETOR_RANKINGS = '.perfil-rankings__trilho[data-bs-toggle="tooltip"]';
   var SELETOR_CURSOR = SELETOR_PETALAS + ", " + SELETOR_BARRAS + ", " + SELETOR_RANKINGS;
-  var SELETOR_ANCORADAS = SELETOR_CHIPS + ", " + SELETOR_INFO;
+  var SELETOR_ANCORADAS = SELETOR_CHIPS + ", " + SELETOR_INFO + ", " + SELETOR_SENTIDO;
   var SELETOR_METRICAS = '.metrica-tooltip[data-tooltip-texto]';
 
   /* Executando a função imediatamente quando a página já estiver pronta */
