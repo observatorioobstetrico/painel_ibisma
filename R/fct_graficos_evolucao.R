@@ -24,14 +24,14 @@ ALTURA_GRAFICO_INDICADOR <- 160L
 # Definindo a largura mínima para manter os rótulos de ano na horizontal
 LARGURA_ROTULOS_ANOS <- 340L
 
-# Definindo o passo dos ticks e das linhas de grade do eixo Y das medidas
-PASSO_EIXO_Y <- 25
+# Definindo o número de marcações equiespaçadas do eixo Y de todos os gráficos
+MARCACOES_EIXO <- 5L
 
 # Definindo os passos redondos usados nos eixos dos indicadores
 PASSOS_EIXO <- c(1, 1.5, 2, 2.5, 5, 10)
 
-# Definindo o número de intervalos (e de ticks) dos eixos dos indicadores
-INTERVALOS_EIXO <- 5
+# Definindo os passos redondos dos eixos das medidas (sempre inteiros)
+PASSOS_MEDIDA <- c(1, 2, 5, 10)
 
 # Definindo a opacidade do preenchimento sob as linhas da evolução (0 desliga)
 OPACIDADE_AREA_EVOLUCAO <- 0
@@ -72,44 +72,56 @@ tooltip_echarts <- function(grafico, trigger = "item", formatter = NULL, extras 
   do.call(echarts4r::e_tooltip, c(list(grafico), opcoes))
 }
 
-#' Definindo uma função que calcula o piso do eixo Y de um conjunto de séries
+#' Definindo uma função que calcula a faixa do eixo Y de um conjunto de valores
 #'
-#' @param series Data frame retornado por series_municipio().
-#' @param medidas Medidas consideradas no cálculo (o índice ou os seis blocos).
-#' @return Piso em múltiplo de 25 para o eixo começar perto dos dados (0 a 75).
-#' Usada em: fct_graficos_evolucao.R (grafico_evolucao) e mod_como.R (limites do eixo).
+#' @param valores Vetor de valores exibidos nos gráficos.
+#' @param passo_minimo Menor passo aceito, igual à precisão do dado.
+#' @param passos Passos redondos candidatos, em ordem crescente.
+#' @param limite_maximo Maior valor permitido no topo do eixo.
+#' @return Lista com min, max e passo de um eixo de cinco marcações.
+#' Usada em: fct_graficos_evolucao.R (limites_medidas e limites_indicador).
 #' @noRd
-piso_eixo_y <- function(series, medidas = MEDIDAS$medida) {
-  # Reunindo os valores das medidas pedidas em um único vetor
-  colunas <- intersect(medidas, names(series))
-  valores <- unlist(series[, colunas, drop = FALSE], use.names = FALSE)
-  if (all(is.na(valores))) {
-    return(0)
+limites_eixo <- function(valores, passo_minimo = 1, passos = PASSOS_EIXO,
+                         limite_maximo = Inf) {
+  valores <- valores[is.finite(valores)]
+  intervalos <- MARCACOES_EIXO - 1L
+
+  # Abrindo uma faixa neutra quando não há valor para desenhar
+  if (length(valores) == 0) {
+    return(list(min = 0, max = intervalos * passo_minimo, passo = passo_minimo))
   }
 
-  # Arredondando o menor valor para baixo no múltiplo de 25 e evitando eixo degenerado
-  piso <- floor(min(valores, na.rm = TRUE) / PASSO_EIXO_Y) * PASSO_EIXO_Y
-  max(0, min(piso, 100 - PASSO_EIXO_Y))
-}
-
-#' Definindo uma função que calcula o teto do eixo Y de um conjunto de séries
-#'
-#' @param series Data frame retornado por series_municipio().
-#' @param medidas Medidas consideradas no cálculo (o índice ou os seis blocos).
-#' @return Teto em múltiplo de 25 para o eixo terminar perto dos dados (25 a 100).
-#' Usada em: fct_graficos_evolucao.R (grafico_evolucao) e mod_como.R (limites do eixo).
-#' @noRd
-teto_eixo_y <- function(series, medidas = MEDIDAS$medida) {
-  # Reunindo os valores das medidas pedidas em um único vetor
-  colunas <- intersect(medidas, names(series))
-  valores <- unlist(series[, colunas, drop = FALSE], use.names = FALSE)
-  if (all(is.na(valores))) {
-    return(100)
+  # Dando folga em torno de uma série constante (ex.: IDHM fixo no tempo)
+  inicio <- min(valores)
+  fim <- max(valores)
+  if (inicio == fim) {
+    folga <- abs(inicio) * 0.1
+    # Garantindo uma folga mínima para séries constantes próximas de zero
+    if (abs(inicio) < 1) folga <- max(folga, 0.05)
+    inicio <- max(0, inicio - folga)
+    fim <- fim + folga
   }
 
-  # Arredondando o maior valor para cima no múltiplo de 25 e respeitando o limite do índice
-  teto <- ceiling(max(valores, na.rm = TRUE) / PASSO_EIXO_Y) * PASSO_EIXO_Y
-  min(100, max(PASSO_EIXO_Y, teto))
+  # Buscando o menor passo que cobre os dados nas cinco marcações
+  for (passo in passos_do_eixo(fim - inicio, passo_minimo, passos)) {
+    # Múltiplos do passo que comportam a janela de cinco marcações
+    k_minimo <- ceiling(max(0, fim - intervalos * passo) / passo - 1e-9)
+    k_maximo <- floor(inicio / passo + 1e-9)
+    if (k_minimo > k_maximo) {
+      next
+    }
+    # Centralizando a janela nos dados, dentro dos múltiplos possíveis
+    k <- round((inicio - (intervalos * passo - (fim - inicio)) / 2) / passo)
+    k <- min(max(k, k_minimo), k_maximo)
+    # Reposicionando a janela para não passar do limite do dado
+    base <- min(k * passo, limite_maximo - intervalos * passo)
+    base <- max(0, base)
+    return(list(min = base, max = base + intervalos * passo, passo = passo))
+  }
+
+  # Fallback defensivo: do zero ao maior passo, sempre válido
+  passo <- passos[length(passos)]
+  list(min = 0, max = intervalos * passo, passo = passo)
 }
 
 #' Definindo uma função que monta o JavaScript que rotaciona os rótulos de ano conforme a largura
@@ -149,29 +161,20 @@ rotulos_anos_js <- function() {
 #' @param nome Nome da localidade principal exibido no rótulo e no tooltip.
 #' @param comparacao Data frame do município comparado (opcional).
 #' @param nome_comparacao Nome do município comparado (opcional).
-#' @param minimo_y Piso do eixo Y; quando NULL, calculado das próprias séries.
-#' @param maximo_y Teto do eixo Y; quando NULL, calculado das próprias séries.
+#' @param limites Faixa e passo do eixo Y; quando NULL, calculados das séries.
 #' @return Objeto echarts4r pronto para renderização.
 #' Usada em: mod_como.R (grade da evolução).
 #' @noRd
 grafico_evolucao <- function(series, medida, nome = NULL,
                              comparacao = NULL, nome_comparacao = NULL,
-                             minimo_y = NULL, maximo_y = NULL) {
+                             limites = NULL) {
   # Identificando a cor do traço e o destaque da medida desenhada
   cor <- cor_linha_medida(medida)
   eh_indice <- identical(medida, "indice_final")
 
-  # Calculando o piso do eixo quando o módulo não impõe um valor compartilhado
-  if (is.null(minimo_y)) {
-    minimo_y <- piso_eixo_y(series, medida)
-  }
-  # Calculando o teto do eixo quando o módulo não impõe um valor compartilhado
-  if (is.null(maximo_y)) {
-    maximo_y <- teto_eixo_y(series, medida)
-  }
-  # Evitando um eixo degenerado quando piso e teto caem no mesmo múltiplo
-  if (maximo_y <= minimo_y) {
-    maximo_y <- min(100, minimo_y + PASSO_EIXO_Y)
+  # Calculando a faixa do eixo quando o módulo não impõe uma escala compartilhada
+  if (is.null(limites)) {
+    limites <- limites_medidas(series, medida, comparacao)
   }
 
   # Montando a tabela do gráfico com uma coluna por localidade
@@ -250,11 +253,11 @@ grafico_evolucao <- function(series, medida, nome = NULL,
       splitLine = list(show = FALSE)
     ) |>
     echarts4r::e_y_axis(
-      min = minimo_y,
-      max = maximo_y,
+      min = limites$min,
+      max = limites$max,
       name = NULL,
-      # Marcando o eixo de 25 em 25, como as linhas de grade do desenho
-      interval = PASSO_EIXO_Y,
+      # Marcando o eixo no passo redondo calculado para a faixa
+      interval = limites$passo,
       axisLabel = list(color = "#5A6472", fontSize = 11),
       axisLine = list(show = FALSE),
       axisTick = list(show = FALSE),
@@ -285,16 +288,17 @@ grafico_evolucao <- function(series, medida, nome = NULL,
 #' Definindo uma função que lista os passos redondos candidatos para um eixo
 #'
 #' @param faixa Diferença entre o maior e o menor valor exibidos.
-#' @param minimo Menor passo aceito, igual à precisão do indicador.
+#' @param minimo Menor passo aceito, igual à precisão do dado.
+#' @param passos Passos redondos candidatos, em ordem crescente.
 #' @return Vetor crescente de passos redondos que cobrem a faixa.
-#' Usada em: fct_graficos_evolucao.R (limites_indicador).
+#' Usada em: fct_graficos_evolucao.R (limites_eixo).
 #' @noRd
-passos_do_eixo <- function(faixa, minimo = 0) {
-  # Partindo de cinco intervalos e montando a escada de passos redondos
-  bruto <- max(faixa / INTERVALOS_EIXO, minimo, 1e-9)
+passos_do_eixo <- function(faixa, minimo = 0, passos = PASSOS_EIXO) {
+  # Partindo das marcações do eixo e montando a escada de passos redondos
+  bruto <- max(faixa / (MARCACOES_EIXO - 1L), minimo, 1e-9)
   expoente <- floor(log10(bruto))
-  passos <- as.vector(outer(PASSOS_EIXO, 10^(expoente + -1:3), "*"))
-  sort(unique(passos[passos >= bruto * (1 - 1e-9)]))
+  opcoes <- as.vector(outer(passos, 10^(expoente + -1:3), "*"))
+  sort(unique(opcoes[opcoes >= bruto * (1 - 1e-9)]))
 }
 
 #' Definindo uma função que conta as casas decimais de um passo redondo
@@ -314,58 +318,51 @@ casas_do_passo <- function(passo) {
   max(0, -expoente)
 }
 
+#' Definindo uma função que calcula a faixa do eixo de um grupo de medidas
+#'
+#' @param series Data frame retornado por series_municipio() (pode ser NULL).
+#' @param medidas Medidas consideradas no cálculo (o índice ou os seis blocos).
+#' @param comparacao Data frame do município comparado (opcional).
+#' @return Lista com min, max e passo de um eixo de cinco marcações inteiras.
+#' Usada em: fct_graficos_evolucao.R (grafico_evolucao) e mod_como.R (escala compartilhada).
+#' @noRd
+limites_medidas <- function(series, medidas = MEDIDAS$medida, comparacao = NULL) {
+  # Reunindo os valores das medidas pedidas nos municípios exibidos
+  colunas <- function(base) {
+    if (is.null(base)) {
+      return(NULL)
+    }
+    unlist(base[, intersect(medidas, names(base)), drop = FALSE], use.names = FALSE)
+  }
+  valores <- c(colunas(series), colunas(comparacao))
+  if (length(valores[is.finite(valores)]) == 0) {
+    return(list(min = 0, max = 100, passo = 25))
+  }
+
+  # Mantendo os números inteiros e o topo dentro dos 100 do percentil
+  limites_eixo(valores, 1, PASSOS_MEDIDA, 100)
+}
+
 #' Definindo uma função que calcula a faixa e o passo do eixo de um indicador
 #'
 #' @param series Data frame retornado por series_municipio().
 #' @param indicador Identificador do indicador (ex.: "PRE_NATAL").
 #' @param comparacao Data frame do município comparado (opcional).
-#' @return Lista com min, max e passo de um eixo de cinco intervalos.
+#' @return Lista com min, max e passo de um eixo de cinco marcações.
 #' Usada em: fct_graficos_evolucao.R (grafico_evolucao_indicador).
 #' @noRd
 limites_indicador <- function(series, indicador, comparacao = NULL) {
   # Reunindo os valores do indicador nos municípios exibidos
-  valores <- c(series[[indicador]], if (!is.null(comparacao)) comparacao[[indicador]])
-  valores <- valores[is.finite(valores)]
-
-  # Abrindo uma faixa neutra quando o indicador não tem valor para desenhar
-  if (length(valores) == 0) {
-    return(list(min = 0, max = 1, passo = 1 / INTERVALOS_EIXO))
-  }
-
-  # Dando folga em torno de uma série constante (ex.: IDHM fixo no tempo)
-  inicio <- min(valores)
-  fim <- max(valores)
-  if (inicio == fim) {
-    folga <- abs(inicio) * 0.1
-    # Garantindo uma folga mínima para séries constantes próximas de zero
-    if (abs(inicio) < 1) folga <- max(folga, 0.05)
-    inicio <- max(0, inicio - folga)
-    fim <- fim + folga
-  }
-
-  # Buscando o menor passo que cobre os dados em cinco intervalos
   info <- info_indicador(indicador)
-  passos <- passos_do_eixo(fim - inicio, 10^(-info$decimais))
-  for (passo in passos) {
-    # Múltiplos do passo que comportam a janela de cinco intervalos
-    k_minimo <- ceiling(max(0, fim - INTERVALOS_EIXO * passo) / passo - 1e-9)
-    k_maximo <- floor(inicio / passo + 1e-9)
-    if (k_minimo > k_maximo) {
-      next
-    }
-    # Centralizando a janela nos dados, dentro dos múltiplos possíveis
-    k <- round((inicio - (INTERVALOS_EIXO * passo - (fim - inicio)) / 2) / passo)
-    k <- min(max(k, k_minimo), k_maximo)
-    return(list(
-      min = k * passo,
-      max = (k + INTERVALOS_EIXO) * passo,
-      passo = passo
-    ))
-  }
+  valores <- c(series[[indicador]], if (!is.null(comparacao)) comparacao[[indicador]])
 
-  # Fallback defensivo: do zero ao maior passo, sempre válido
-  passo <- passos[length(passos)]
-  list(min = 0, max = INTERVALOS_EIXO * passo, passo = passo)
+  # Respeitando a precisão do indicador e os 100% do que é porcentagem
+  limites_eixo(
+    valores,
+    10^(-info$decimais),
+    PASSOS_EIXO,
+    if (info$unidade == "%") 100 else Inf
+  )
 }
 
 #' Definindo uma função que monta o gráfico de evolução temporal de um indicador
@@ -589,6 +586,11 @@ grade_evolucao_ui <- function(ns) {
     cartao("indice_final", ALTURA_GRAFICO_IBISMA, "evolucao-card--ibisma"),
     # Organizando os seis blocos em pequenos múltiplos
     htmltools::tags$h4(class = "evolucao-grade__titulo", "Blocos do IBISMA"),
+    # Identificando os municípios logo abaixo do título dos blocos
+    htmltools::tags$div(
+      class = "evolucao-identificacao--blocos",
+      shiny::uiOutput(ns("evolucao_identificacao_blocos"))
+    ),
     lapply(seq_len(nrow(BLOCOS)), function(i) {
       cartao(BLOCOS$medida[i], ALTURA_GRAFICO_BLOCO)
     })

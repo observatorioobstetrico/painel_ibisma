@@ -72,7 +72,7 @@ esqueleto_barra <- function(largura = "100%", altura = "0.6em", classe = NULL) {
 #' @param rotulo Largura da barra do rótulo.
 #' @param valor Largura da barra do valor.
 #' @return Elemento HTML com a métrica esquelética.
-#' Usada em: fct_esqueleto.R (esqueleto_palco e esqueleto_placar).
+#' Usada em: fct_esqueleto.R (esqueleto_palco e esqueleto_rankings).
 #' @noRd
 esqueleto_metrica <- function(rotulo, valor) {
   htmltools::tags$div(
@@ -310,47 +310,59 @@ esqueleto_petalas <- function() {
   )
 }
 
-#' Definindo uma função que monta o esqueleto do placar do IBISMA
+#' Definindo uma função que monta o esqueleto do índice do IBISMA
 #'
-#' @return Elemento HTML com valor central e rankings laterais neutros.
+#' @return Elemento HTML com rótulo, valor central e frase neutros.
 #' Usada em: fct_esqueleto.R (esqueleto_palco).
 #' @noRd
-esqueleto_placar <- function() {
-  # Mantendo a mesma divisão em áreas do placar real
+esqueleto_indice <- function() {
+  # Mantendo a mesma divisão do bloco real do índice
   htmltools::tags$div(
-    class = "perfil-placar",
-    htmltools::tags$div(
-      class = "perfil-placar__indice",
-      htmltools::tags$span(
-        class = "perfil-placar__rotulo",
-        esqueleto_barra("6rem", "0.55em")
-      ),
-      htmltools::tags$div(
-        class = "perfil-indice__linha perfil-indice__linha--centro",
-        htmltools::tags$span(
-          class = "perfil-indice__valor",
-          esqueleto_barra("5.5rem", "0.72em")
-        ),
-        htmltools::tags$span(
-          class = "perfil-indice__escala",
-          esqueleto_barra("2.5rem", "0.55em")
-        ),
-        esqueleto_barra("5rem", "1.3em", "esqueleto__barra--selo")
-      ),
-      # Montando a frase em barras que quebram de linha como o texto real
-      htmltools::tags$p(
-        class = "perfil-indice__frase",
-        esqueleto_barra("4rem"), " ", esqueleto_barra("5rem"), " ",
-        esqueleto_barra("3.5rem"), " ", esqueleto_barra("6rem"), " ",
-        esqueleto_barra("4.5rem"), " ", esqueleto_barra("3rem")
-      )
+    class = "perfil-indice",
+    htmltools::tags$span(
+      class = "perfil-indice__rotulo",
+      esqueleto_barra("6rem", "0.55em")
     ),
     htmltools::tags$div(
-      class = "perfil-placar__ranking perfil-placar__ranking--brasil",
+      class = "perfil-indice__linha perfil-indice__linha--centro",
+      htmltools::tags$span(
+        class = "perfil-indice__valor",
+        esqueleto_barra("5.5rem", "0.72em")
+      ),
+      htmltools::tags$span(
+        class = "perfil-indice__escala",
+        esqueleto_barra("2.5rem", "0.55em")
+      ),
+      esqueleto_barra("5rem", "1.3em", "esqueleto__barra--selo")
+    ),
+    # Montando a frase em barras que quebram de linha como o texto real
+    htmltools::tags$p(
+      class = "perfil-indice__frase",
+      esqueleto_barra("4rem"), " ", esqueleto_barra("5rem"), " ",
+      esqueleto_barra("3.5rem"), " ", esqueleto_barra("6rem"), " ",
+      esqueleto_barra("4.5rem"), " ", esqueleto_barra("3rem")
+    )
+  )
+}
+
+#' Definindo uma função que monta o esqueleto dos rankings do palco
+#'
+#' @return Elemento HTML com os três rankings neutros da base do palco.
+#' Usada em: fct_esqueleto.R (esqueleto_palco).
+#' @noRd
+esqueleto_rankings <- function() {
+  htmltools::tags$div(
+    class = "perfil-rankings",
+    htmltools::tags$div(
+      class = "perfil-rankings__item perfil-rankings__item--macro",
+      esqueleto_metrica("5.5rem", "5rem")
+    ),
+    htmltools::tags$div(
+      class = "perfil-rankings__item perfil-rankings__item--uf",
       esqueleto_metrica("4.5rem", "6rem")
     ),
     htmltools::tags$div(
-      class = "perfil-placar__ranking perfil-placar__ranking--uf",
+      class = "perfil-rankings__item perfil-rankings__item--brasil",
       esqueleto_metrica("4.5rem", "6rem")
     )
   )
@@ -358,7 +370,7 @@ esqueleto_placar <- function() {
 
 #' Definindo uma função que monta o esqueleto do palco de um município
 #'
-#' @return Elemento HTML com identificação, pétalas e placar esqueléticos.
+#' @return Elemento HTML com identificação, índice, pétalas e rankings neutros.
 #' Usada em: mod_como.R (palcos principal e comparado).
 #' @noRd
 esqueleto_palco <- function() {
@@ -382,16 +394,24 @@ esqueleto_palco <- function() {
       esqueleto_metrica("7rem", "6rem"),
       esqueleto_metrica("6rem", "9rem")
     ),
+    esqueleto_indice(),
     htmltools::tags$div(class = "perfil-palco__grafico", esqueleto_petalas()),
-    esqueleto_placar()
+    esqueleto_rankings()
   )
 }
 
 # Definindo as margens verticais do desenho dos esqueletos da evolução
 ESQUELETO_GRAFICO_TOPO <- 16
 ESQUELETO_GRAFICO_RODAPE <- 28
-# Definindo as frações da altura útil usadas na grade e nos números do eixo
-ESQUELETO_GRAFICO_GRADE <- c(0.15, 0.38, 0.62, 0.85)
+
+#' Definindo uma função que distribui as marcações do esqueleto na altura útil
+#'
+#' @return Frações da altura útil, uma por marcação do eixo Y dos gráficos.
+#' Usada em: fct_esqueleto.R (esqueleto_grafico_margem e esqueleto_grafico_svg).
+#' @noRd
+fracoes_grade_esqueleto <- function() {
+  seq(0, 1, length.out = MARCACOES_EIXO)
+}
 
 #' Definindo uma função que monta a coluna dos números do eixo Y do esqueleto
 #'
@@ -403,7 +423,7 @@ esqueleto_grafico_margem <- function(altura) {
   # Calculando a altura útil do gráfico, como no desenho real
   faixa <- altura - ESQUELETO_GRAFICO_TOPO - ESQUELETO_GRAFICO_RODAPE
   # Repetindo a mesma barra em todas as linhas para um ritmo uniforme
-  barras <- lapply(ESQUELETO_GRAFICO_GRADE, function(fracao) {
+  barras <- lapply(fracoes_grade_esqueleto(), function(fracao) {
     htmltools::tags$span(
       class = "esqueleto__barra esqueleto__barra--rotulo",
       style = paste0(
@@ -427,7 +447,7 @@ esqueleto_grafico_svg <- function(altura) {
   faixa <- base - topo
 
   # Desenhando a grade horizontal nas mesmas alturas dos números do eixo
-  grade <- lapply(ESQUELETO_GRAFICO_GRADE, function(fracao) {
+  grade <- lapply(fracoes_grade_esqueleto(), function(fracao) {
     y <- round(topo + fracao * faixa, 1)
     htmltools::tags$line(class = "esqueleto__grade", x1 = 0, y1 = y, x2 = 100, y2 = y)
   })
