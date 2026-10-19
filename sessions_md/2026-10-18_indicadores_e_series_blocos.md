@@ -118,10 +118,6 @@ por bloco.
 
 ## 8. Versionamento e ambiente
 
-- Ajustes de acabamento no fim da sessão: a frase do percentil passou a mostrar
-  o valor real (o município mais vulnerável chega a "acima de 100,0%", sem
-  travar em 99,9%) e o nome do município no perfil usa o tamanho de destaque das
-  caixas.
 - Bases **derivadas** e cache ignorados no git (`data-raw/databases/dados/`,
   `dados_cob_nasc_*.csv`, `banco_dados_atualizado_2024_abril.csv` e
   `indice_materno_final_2015_2024.csv`), por serem regeneráveis.
@@ -143,6 +139,35 @@ por bloco.
   nas tabelas anuais (categorias e rankings por ano); hoje as séries bastam
   para a evolução.
 
+## 10. Ajustes de acabamento da mesma sessão
+
+Depois dos primeiros testes com a base real, uma rodada de ajustes finos:
+
+- **Eixos**: todos os gráficos de evolução (IBISMA, blocos e indicadores) usam
+  cinco marcações equiespaçadas, com a faixa adaptativa (`limites_eixo`) no
+  lugar do piso/teto fixos de 25 em 25; os passos redondos das medidas são
+  sempre inteiros e o topo não passa dos 100 do percentil. Os esqueletos
+  desenham as mesmas cinco marcações.
+- **Identificações das séries**: o componente `evolucao-identificacao` se
+  repete sob o título "Blocos do IBISMA" e sob o seletor de blocos dos
+  indicadores; na seção dos indicadores a amostra de traço e bolinha usa a cor
+  do bloco escolhido (`--cor-serie`), e não o azul escuro padrão.
+- **Seletor de blocos**: virou botões soltos de largura variável, com mais
+  respiro, ponto na cor do bloco e preenchimento sutil (`color-mix` de 16%);
+  saíram a caixa de fundo e o texto "Bloco". A seção passou a se chamar
+  "Os indicadores por trás de cada bloco", com a descrição nova.
+- **Nome do bloco**: "Planejamento Reprodutivo" virou "Planejamento
+  reprodutivo" em todo o painel (o dicionário `MEDIDAS` é a fonte única).
+- **Perfil do município**: o bloco do índice ("IBISMA em {ano}", valor, selo e
+  frase) subiu para logo depois das métricas territoriais, acima das pétalas; a
+  base do palco passou a mostrar **três rankings** — macrorregião de saúde, UF
+  e Brasil, nessa ordem. As tabelas anuais ganharam `pos_macro` e `total_macro`
+  (ranking dentro de cada UF + macrorregião) e as bases foram regeradas; o
+  esqueleto do palco foi dividido em índice e rankings.
+- **Percentil sem trava**: a frase do percentil mostra o valor real (o
+  município mais vulnerável chega a "acima de 100,0%") e o nome do município no
+  perfil usa o tamanho de destaque das caixas.
+
 ## Commits da sessão
 
 - `1e82e19` Versiona a pipeline de indicadores e baixa o SINASC em paralelo
@@ -154,4 +179,9 @@ por bloco.
 - `6a8111e` Ignora as bases derivadas e o cache da pipeline de indicadores
 - `ede5a40` Registra o bundle do deploy mais recente do shinyapps
 - `3ffef48` Documenta a sessão dos indicadores e das séries históricas
-- `(este commit)` Desliga as áreas sombreadas e ajusta os textos do perfil
+- `12b5b45` Desliga as áreas sombreadas e ajusta os textos do perfil
+- `7d743b5` Uniformiza os eixos em cinco marcações e repete as identificações
+- `3c1bcfb` Ranqueia os municípios por macrorregião nas tabelas anuais
+- `f2ebbf5` Reformula o perfil do município e o seletor de blocos
+- `483e21b` Atualiza os testes dos eixos, das identificações e do perfil
+- `(este commit)` Documenta os ajustes de acabamento da sessão
