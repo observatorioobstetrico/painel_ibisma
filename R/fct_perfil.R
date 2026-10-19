@@ -66,10 +66,11 @@ frase_percentil <- function(valor, pos_nac = NULL, total_nac = NULL) {
       ))
     }
   }
-  # Mostrando a parcela de municípios que está à frente deste no índice
+  # Mostrando a parcela de municípios que está abaixo deste no índice
   paste0(
-    formatar_numero(100 - valor),
-    "% dos municípios brasileiros têm Índice VIDAS superior ao deste município"
+    "Superior a ",
+    formatar_numero(valor),
+    "% dos municípios brasileiros"
   )
 }
 

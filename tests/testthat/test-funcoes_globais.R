@@ -571,12 +571,11 @@ test_that("formatadores usam a convenção brasileira", {
   expect_equal(formatar_numero(0.04), "0,0")
 })
 
-test_that("frase_percentil mostra a parcela de municípios à frente", {
-  expect_match(frase_percentil(99.96), "0,0%")
-  expect_match(frase_percentil(100), "0,0%")
-  expect_match(frase_percentil(50), "50,0%")
-  expect_match(frase_percentil(40), "60,0%")
-  expect_match(frase_percentil(40), "superior ao deste município")
+test_that("frase_percentil mostra a parcela de municípios abaixo", {
+  expect_match(frase_percentil(99.96), "Superior a 100,0%", fixed = TRUE)
+  expect_match(frase_percentil(100), "Superior a 100,0%", fixed = TRUE)
+  expect_match(frase_percentil(50), "Superior a 50,0%", fixed = TRUE)
+  expect_match(frase_percentil(40), "Superior a 40,0%", fixed = TRUE)
   expect_match(frase_percentil(NA), "Sem dado")
 })
 
