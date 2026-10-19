@@ -1,7 +1,7 @@
 # =============================================================================
 #   COMPONENTES DO PERFIL DO MUNICÍPIO
-#   Monta o palco de um município — identificação, pétalas dos seis blocos e
-#   placar do IBISMA — de forma reutilizável para o município principal e para
+#   Monta o palco de um município — identificação, índice, pétalas dos seis
+#   blocos e rankings — de forma reutilizável para o município principal e para
 #   o município de comparação.
 # =============================================================================
 
@@ -12,7 +12,7 @@
 #' @param detalhe Texto auxiliar (opcional).
 #' @param tooltip Guarda o texto completo para o tooltip exibido quando cortado.
 #' @return Elemento HTML da métrica.
-#' Usada em: perfil_palco() (métricas territoriais) e perfil_placar() (rankings).
+#' Usada em: perfil_palco() (métricas territoriais) e perfil_rankings() (rankings).
 #' @noRd
 metrica_hero <- function(rotulo, valor, detalhe = NULL, tooltip = FALSE) {
   # Montando um campo que expõe o próprio texto para o tooltip condicional
@@ -41,7 +41,7 @@ metrica_hero <- function(rotulo, valor, detalhe = NULL, tooltip = FALSE) {
 #'
 #' @param valor Valor do índice na escala 0 a 100.
 #' @return Texto explicando o percentil de vulnerabilidade.
-#' Usada em: perfil_placar().
+#' Usada em: perfil_indice().
 #' @noRd
 frase_percentil <- function(valor) {
   ## Obs.: este bloco usa funções auxiliares de fct_dados.
@@ -55,53 +55,71 @@ frase_percentil <- function(valor) {
   )
 }
 
-#' Definindo uma função que monta o placar do IBISMA de um município
+#' Definindo uma função que monta o bloco do índice do município
 #'
 #' @param resumo Lista retornada por resumo_municipio().
 #' @param ano Ano de referência exibido no rótulo do valor.
-#' @return Elemento HTML com valor, categoria e rankings.
+#' @return Elemento HTML com rótulo, valor, categoria e leitura do percentil.
 #' Usada em: perfil_palco().
 #' @noRd
-perfil_placar <- function(resumo, ano) {
+perfil_indice <- function(resumo, ano) {
   ## Obs.: este bloco usa funções auxiliares de fct_ui, fct_dados e fct_perfil.
   htmltools::tags$div(
-    class = "perfil-placar",
-    # Valor do IBISMA nomeado, com categoria e leitura do percentil
+    class = "perfil-indice",
+    # Nomeando o valor em destaque, com a categoria e a leitura do percentil
+    htmltools::tags$span(
+      class = "perfil-indice__rotulo",
+      paste0("IBISMA em ", ano)
+    ),
     htmltools::tags$div(
-      class = "perfil-placar__indice",
+      class = "perfil-indice__linha perfil-indice__linha--centro",
       htmltools::tags$span(
-        class = "perfil-placar__rotulo",
-        paste0("IBISMA em ", ano)
+        class = "perfil-indice__valor",
+        # Todos os valores do painel são exibidos com uma casa decimal
+        formatar_numero(resumo$valor)
       ),
-      htmltools::tags$div(
-        class = "perfil-indice__linha perfil-indice__linha--centro",
-        htmltools::tags$span(
-          class = "perfil-indice__valor",
-          # Todos os valores do painel são exibidos com uma casa decimal
-          formatar_numero(resumo$valor)
-        ),
-        htmltools::tags$span(class = "perfil-indice__escala", "de 100"),
-        badge_categoria(resumo$categoria)
-      ),
-      htmltools::tags$p(
-        class = "perfil-indice__frase",
-        frase_percentil(resumo$valor)
-      )
+      htmltools::tags$span(class = "perfil-indice__escala", "de 100"),
+      badge_categoria(resumo$categoria)
     ),
-    # Ranking nacional à esquerda do placar
+    htmltools::tags$p(
+      class = "perfil-indice__frase",
+      frase_percentil(resumo$valor)
+    )
+  )
+}
+
+#' Definindo uma função que monta os rankings do município
+#'
+#' @param resumo Lista retornada por resumo_municipio().
+#' @return Elemento HTML com os rankings da macrorregião, da UF e do Brasil.
+#' Usada em: perfil_palco().
+#' @noRd
+perfil_rankings <- function(resumo) {
+  ## Obs.: este bloco usa funções auxiliares de fct_dados e fct_perfil.
+  htmltools::tags$div(
+    class = "perfil-rankings",
+    # Ranking da macrorregião de saúde à esquerda do palco
     htmltools::tags$div(
-      class = "perfil-placar__ranking perfil-placar__ranking--brasil",
+      class = "perfil-rankings__item perfil-rankings__item--macro",
       metrica_hero(
-        "Ranking Brasil",
-        rotulo_posicao(resumo$pos_nac, resumo$total_nac)
+        "Ranking na macrorregião",
+        rotulo_posicao(resumo$pos_macro, resumo$total_macro)
       )
     ),
-    # Ranking estadual à direita do placar
+    # Ranking estadual ao centro do palco
     htmltools::tags$div(
-      class = "perfil-placar__ranking perfil-placar__ranking--uf",
+      class = "perfil-rankings__item perfil-rankings__item--uf",
       metrica_hero(
         "Ranking na UF",
         rotulo_posicao(resumo$pos_uf, resumo$total_uf)
+      )
+    ),
+    # Ranking nacional à direita do palco
+    htmltools::tags$div(
+      class = "perfil-rankings__item perfil-rankings__item--brasil",
+      metrica_hero(
+        "Ranking Brasil",
+        rotulo_posicao(resumo$pos_nac, resumo$total_nac)
       )
     )
   )
@@ -111,7 +129,7 @@ perfil_placar <- function(resumo, ano) {
 #'
 #' @param municipio Linha do cadastro de municípios (nome, UF e território).
 #' @param resumo Lista retornada por resumo_municipio() ou NULL sem dado no ano.
-#' @param ano Ano de referência exibido no placar.
+#' @param ano Ano de referência exibido no índice.
 #' @param comparado Indica se o palco é o do município de comparação.
 #' @param rotulo Rótulo de hierarquia exibido acima do nome (opcional).
 #' @return Elemento HTML com o palco completo.
@@ -147,7 +165,7 @@ perfil_palco <- function(municipio, resumo, ano,
     )
   }
 
-  # Montando as pétalas e o placar somente quando houver dado no ano
+  # Montando o índice, as pétalas e os rankings somente quando houver dado no ano
   corpo <- if (is.null(resumo)) {
     htmltools::tags$div(
       class = "perfil-palco__grafico",
@@ -161,11 +179,12 @@ perfil_palco <- function(municipio, resumo, ano,
     )
   } else {
     htmltools::tagList(
+      perfil_indice(resumo, ano),
       htmltools::tags$div(
         class = "perfil-palco__grafico",
         grafico_petalas(resumo$blocos)
       ),
-      perfil_placar(resumo, ano)
+      perfil_rankings(resumo)
     )
   }
 

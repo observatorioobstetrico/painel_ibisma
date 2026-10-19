@@ -1168,48 +1168,16 @@ input:focus-visible,
   text-align: left;
 }
 
-/* Distribuindo o placar com rankings nas laterais e o valor ao centro */
-/* A largura mínima das laterais reserva o mesmo espaço para os rankings */
-/* mesmo com posições e totais de dígitos diferentes em cada município */
-.perfil-placar {
-  display: grid;
-  grid-template-columns: minmax(7.5rem, 1fr) auto minmax(7.5rem, 1fr);
-  grid-template-areas: "brasil indice uf";
-  align-items: end;
-  gap: 1rem 2rem;
+/* Centralizando o bloco do índice acima das pétalas */
+.perfil-indice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-top: 1rem;
-  padding-top: 1rem;
 }
 
-/* Mantendo rótulo e valor de cada ranking em uma única linha */
-/* Assim um texto maior não muda a altura nem desloca os elementos seguintes */
-.perfil-placar__ranking .metrica-rotulo,
-.perfil-placar__ranking .metrica-valor {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Posicionando o ranking nacional à esquerda do placar */
-.perfil-placar__ranking--brasil {
-  grid-area: brasil;
-  text-align: left;
-}
-
-/* Posicionando o ranking estadual à direita do placar */
-.perfil-placar__ranking--uf {
-  grid-area: uf;
-  text-align: right;
-}
-
-/* Centralizando o valor do IBISMA no meio do placar */
-.perfil-placar__indice {
-  grid-area: indice;
-  text-align: center;
-}
-
-/* Nomeando explicitamente o valor em destaque no placar */
-.perfil-placar__rotulo {
+/* Nomeando explicitamente o valor em destaque no índice */
+.perfil-indice__rotulo {
   display: block;
   font-size: var(--fonte-pequena-size);
   font-weight: 700;
@@ -1255,10 +1223,41 @@ input:focus-visible,
   margin: 0;
 }
 
-/* Limitando e centralizando a frase do percentil dentro do placar */
-.perfil-placar__indice .perfil-indice__frase {
+/* Limitando e centralizando a frase do percentil dentro do índice */
+.perfil-indice .perfil-indice__frase {
   max-width: 30rem;
   margin: 0.35rem auto 0 auto;
+}
+
+/* Distribuindo os três rankings na base do palco */
+.perfil-rankings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 1rem 2rem;
+  margin-top: 1rem;
+}
+
+/* Mantendo rótulo e valor de cada ranking em uma única linha */
+/* Assim um texto maior não muda a altura nem desloca os elementos seguintes */
+.perfil-rankings .metrica-rotulo,
+.perfil-rankings .metrica-valor {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Alinhando cada ranking à sua coluna do palco */
+.perfil-rankings__item--macro {
+  text-align: left;
+}
+
+.perfil-rankings__item--uf {
+  text-align: center;
+}
+
+.perfil-rankings__item--brasil {
+  text-align: right;
 }
 
 /* Aproveitando a largura do palco para ampliar o leque de pétalas */
@@ -1386,6 +1385,11 @@ input:focus-visible,
   line-height: 1.2;
 }
 
+/* Ocupando a linha inteira da grade quando fica abaixo do título dos blocos */
+.evolucao-identificacao--blocos {
+  grid-column: 1 / -1;
+}
+
 /* Mostrando cada município com o traço e a bolinha usados no próprio gráfico */
 .evolucao-identificacao__serie {
   display: inline-flex;
@@ -1415,7 +1419,8 @@ input:focus-visible,
   height: 0.1875rem;
   margin-top: -0.09375rem;
   border-radius: 999px;
-  background-color: var(--cor-azul-escuro);
+  /* Usando a cor da série quando ela é informada pela seção */
+  background-color: var(--cor-serie, var(--cor-azul-escuro));
 }
 
 /* Desenhando a bolinha cheia do município principal, fundida ao traço */
@@ -1428,7 +1433,7 @@ input:focus-visible,
   height: 0.5rem;
   margin: -0.25rem 0 0 -0.25rem;
   border-radius: 50%;
-  background-color: var(--cor-azul-escuro);
+  background-color: var(--cor-serie, var(--cor-azul-escuro));
 }
 
 /* Trocando o traço cheio pelo tracejado simétrico em volta da bolinha */
@@ -1438,7 +1443,7 @@ input:focus-visible,
      ponta e outro escondido sob a bolinha central */
   background-image: repeating-linear-gradient(
     90deg,
-    var(--cor-azul-escuro) 0 0.375rem,
+    var(--cor-serie, var(--cor-azul-escuro)) 0 0.375rem,
     transparent 0.375rem 0.6875rem
   );
 }
@@ -1446,7 +1451,7 @@ input:focus-visible,
 /* Esvaziando o miolo da bolinha do município comparado, como no gráfico */
 .evolucao-identificacao__amostra--comparacao::after {
   background-color: var(--cor-branco);
-  box-shadow: inset 0 0 0 1.5px var(--cor-azul-escuro);
+  box-shadow: inset 0 0 0 1.5px var(--cor-serie, var(--cor-azul-escuro));
 }
 
 /* ------------------------------------------- indicadores do bloco */
@@ -1456,27 +1461,34 @@ input:focus-visible,
   margin-top: 1.5rem;
 }
 
-/* Dando respiro entre os chips dos blocos e a grade de cartões */
-.painel-bloco--indicadores .indicadores-controles {
+/* Dando o respiro pedido entre os botões e a identificação abaixo */
+.painel-bloco--indicadores .shiny-input-radiogroup {
+  margin-bottom: 0.5rem;
+}
+
+/* Reservando o espaço da identificação abaixo do seletor de bloco */
+.painel-bloco--indicadores .esqueleto-slot--identificacao .evolucao-identificacao {
   margin-bottom: 0.9rem;
 }
 
-/* Desmontando os botões agrupados do radioGroupButtons em chips soltos */
+/* Desmontando os botões agrupados do radioGroupButtons em botões soltos */
 /* O Bootstrap 5 desenha cada opção como um input.btn-check e um label.btn */
 .indicadores-controles .radio-group-buttons .btn-group {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  border: 0;
 }
 
-/* Estilizando cada chip do seletor de blocos */
-.indicadores-controles .btn.radiobtn {
+/* Estilizando cada botão com a largura do próprio rótulo */
+.indicadores-controles .radio-group-buttons .btn.radiobtn {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.32rem 0.85rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--cor-linha);
+  border-radius: 10px;
   background-color: var(--cor-branco);
   color: var(--cor-azul-escuro);
   font-size: var(--fonte-media-size);
@@ -1486,8 +1498,8 @@ input:focus-visible,
   transition: background-color 0.16s ease, border-color 0.16s ease;
 }
 
-/* Marcando cada chip com um ponto na cor do próprio bloco */
-.indicadores-controles .btn.radiobtn::before {
+/* Marcando cada botão com um ponto na cor do próprio bloco */
+.indicadores-controles .radio-group-buttons .btn.radiobtn::before {
   content: "";
   flex: 0 0 auto;
   width: 0.5rem;
@@ -1496,22 +1508,16 @@ input:focus-visible,
   background-color: var(--cor-bloco, var(--cor-azul-claro));
 }
 
-/* Suavizando o hover dos chips ainda não escolhidos */
-.indicadores-controles .btn.radiobtn:hover {
-  border-color: var(--cor-linha);
+/* Suavizando o hover dos botões ainda não escolhidos */
+.indicadores-controles .radio-group-buttons .btn.radiobtn:hover {
+  border-color: rgb(var(--cor-azul-escuro-rgb) / 0.22);
   background-color: rgb(var(--cor-azul-escuro-rgb) / 0.04);
 }
 
-/* Pintando o chip escolhido com a cor do bloco correspondente */
+/* Marcando o botão escolhido com um preenchimento sutil da cor do bloco */
 .indicadores-controles .btn-check:checked + .btn.radiobtn {
-  background-color: var(--cor-bloco, var(--cor-azul-claro));
-  border-color: var(--cor-bloco, var(--cor-azul-claro));
-  color: var(--cor-bloco-texto, var(--cor-branco));
-}
-
-/* Trocando o ponto pela cor de contraste sobre o fundo colorido */
-.indicadores-controles .btn-check:checked + .btn.radiobtn::before {
-  background-color: var(--cor-bloco-texto, var(--cor-branco));
+  background-color: color-mix(in srgb, var(--cor-bloco) 16%, var(--cor-branco));
+  border-color: color-mix(in srgb, var(--cor-bloco) 45%, var(--cor-branco));
 }
 
 /* Reforçando o foco do teclado com o anel azul do painel */
@@ -1520,36 +1526,29 @@ input:focus-visible,
   outline-offset: 2px;
 }
 
-/* Ligando cada chip à cor e à cor de texto do bloco correspondente */
-/* O amarelo, o verde e o azul claro pedem texto escuro para contraste */
+/* Ligando cada botão à cor do bloco correspondente */
 .indicadores-controles .btn-check[value="bloco1"] + .btn.radiobtn {
   --cor-bloco: #FAC80F;
-  --cor-bloco-texto: var(--cor-azul-escuro);
 }
 
 .indicadores-controles .btn-check[value="bloco2"] + .btn.radiobtn {
   --cor-bloco: #41BE3C;
-  --cor-bloco-texto: var(--cor-azul-escuro);
 }
 
 .indicadores-controles .btn-check[value="bloco3"] + .btn.radiobtn {
   --cor-bloco: #32A0FF;
-  --cor-bloco-texto: var(--cor-azul-escuro);
 }
 
 .indicadores-controles .btn-check[value="bloco4"] + .btn.radiobtn {
   --cor-bloco: #E4572E;
-  --cor-bloco-texto: var(--cor-branco);
 }
 
 .indicadores-controles .btn-check[value="bloco5"] + .btn.radiobtn {
   --cor-bloco: #1E5AA0;
-  --cor-bloco-texto: var(--cor-branco);
 }
 
 .indicadores-controles .btn-check[value="bloco6"] + .btn.radiobtn {
   --cor-bloco: #00A6A6;
-  --cor-bloco-texto: var(--cor-branco);
 }
 
 /* Organizando os cartões em uma grade que se adapta à quantidade do bloco */
@@ -2365,13 +2364,18 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
     height: 1.75rem;
   }
 
-  /* Mantendo o valor na primeira linha e os rankings lado a lado abaixo */
-  .perfil-placar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      "indice indice"
-      "brasil uf";
+  /* Passando os rankings para duas colunas, com a macrorregião na linha toda */
+  .perfil-rankings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.85rem 1rem;
+  }
+
+  .perfil-rankings__item--macro {
+    grid-column: 1 / -1;
+  }
+
+  .perfil-rankings__item--uf {
+    text-align: left;
   }
 
   /* Reorganizando as informações territoriais em duas colunas por linha */

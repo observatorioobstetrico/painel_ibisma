@@ -92,7 +92,7 @@ MEDIDAS <- data.frame(
   nome    = c(
     "IBISMA",
     "Social",
-    "Planejamento Reprodutivo",
+    "Planejamento reprodutivo",
     "Pré-natal",
     "Parto",
     "Sistema de saúde",
@@ -101,7 +101,7 @@ MEDIDAS <- data.frame(
   rotulo  = c(
     "IBISMA",
     "Bloco Social",
-    "Bloco Planejamento Reprodutivo",
+    "Bloco Planejamento reprodutivo",
     "Bloco Pré-natal",
     "Bloco Parto",
     "Bloco Sistema de saúde",

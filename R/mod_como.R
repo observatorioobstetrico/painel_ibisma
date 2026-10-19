@@ -114,19 +114,18 @@ mod_como_ui <- function(id) {
           class = "painel-bloco painel-bloco--indicadores",
           htmltools::tags$div(
             class = "bloco-cabecalho",
-            htmltools::tags$h3(class = "bloco-titulo", "Indicadores do bloco"),
+            htmltools::tags$h3(class = "bloco-titulo", "Os indicadores por trás de cada bloco"),
             htmltools::tags$p(
               class = "bloco-descricao",
               paste(
-                "Veja a evolução das peças que compõem cada bloco do IBISMA,",
-                "nos mesmos municípios e período da evolução acima."
+                "Escolha um bloco para ver os indicadores que o compõem",
+                "e como cada um mudou ao longo do tempo."
               )
             )
           ),
-          # Escolhendo o bloco em chips com a cor de identificação de cada dimensão
+          # Escolhendo o bloco em botões com a cor de identificação de cada dimensão
           htmltools::tags$div(
-            class = "controles-inline indicadores-controles",
-            htmltools::tags$span(class = "controle-texto", "Ver indicadores do"),
+            class = "indicadores-controles",
             shinyWidgets::radioGroupButtons(
               inputId = ns("bloco"),
               label = NULL,
@@ -134,6 +133,12 @@ mod_como_ui <- function(id) {
               selected = BLOCOS$medida[1],
               size = "sm"
             )
+          ),
+          # Identificando os municípios logo abaixo do seletor de bloco
+          esqueleto_slot(
+            shiny::uiOutput(ns("indicadores_identificacao")),
+            esqueleto_identificacao(),
+            classe = "esqueleto-slot--identificacao"
           ),
           # Grade com os cartões do bloco escolhido e esqueleto empilhado
           esqueleto_slot(
@@ -222,6 +227,8 @@ mod_como_server <- function(id, dados, municipio) {
         total_nac = linha_indice$total_nac,
         pos_uf = linha_indice$pos_uf,
         total_uf = linha_indice$total_uf,
+        pos_macro = linha_indice$pos_macro,
+        total_macro = linha_indice$total_macro,
         blocos = blocos
       )
     }
@@ -311,24 +318,13 @@ mod_como_server <- function(id, dados, municipio) {
       tem_comparacao() && series_tem_valor(series_comparacao())
     })
 
-    # Calculando os limites do eixo Y de um grupo de medidas nos dois municípios
+    # Calculando a escala compartilhada do eixo de um grupo de medidas
     limites_do_grupo <- function(medidas) {
-      # Reunindo os limites apenas dos gráficos que têm dado para desenhar
-      pisos <- numeric(0)
-      tetos <- numeric(0)
-      if (series_tem_valor(series_principal())) {
-        pisos <- c(pisos, piso_eixo_y(series_principal(), medidas))
-        tetos <- c(tetos, teto_eixo_y(series_principal(), medidas))
-      }
-      if (comparacao_tem_serie()) {
-        pisos <- c(pisos, piso_eixo_y(series_comparacao(), medidas))
-        tetos <- c(tetos, teto_eixo_y(series_comparacao(), medidas))
-      }
-      if (length(pisos) == 0) {
-        return(list(min = 0, max = 100))
-      }
-      # Abrindo a faixa ao máximo para nenhuma das duas séries ser cortada
-      list(min = min(pisos), max = max(tetos))
+      limites_medidas(
+        if (series_tem_valor(series_principal())) series_principal() else NULL,
+        medidas,
+        if (comparacao_tem_serie()) series_comparacao() else NULL
+      )
     }
 
     # Dando ao IBISMA uma escala própria, mais estreita que a dos blocos
@@ -350,8 +346,7 @@ mod_como_server <- function(id, dados, municipio) {
         nome_comparacao = if (is.null(comparacao)) NULL else {
           nome_municipio(dados, cod_comparacao())
         },
-        minimo_y = limites$min,
-        maximo_y = limites$max
+        limites = limites
       )
     }
 
@@ -378,10 +373,13 @@ mod_como_server <- function(id, dados, municipio) {
       )
     }
 
-    # Montando a identificação dos municípios exibidos na grade
-    output$evolucao_identificacao <- shiny::renderUI({
+    # Montando a identificação dos municípios exibidos nas grades
+    # A cor da série é opcional: na seção dos indicadores ela é a do bloco
+    identificacao_series <- function(cor = NULL) {
       # Escondendo a identificação quando o município não tem série temporal
-      shiny::req(series_tem_valor(series_principal()))
+      if (!series_tem_valor(series_principal())) {
+        return(NULL)
+      }
       # Mostrando cada município com o traço e a bolinha do próprio gráfico
       nomes <- list(chip_municipio(nome_municipio(dados, municipio())))
       if (comparacao_tem_serie()) {
@@ -390,8 +388,22 @@ mod_como_server <- function(id, dados, municipio) {
           comparado = TRUE
         )))
       }
-      htmltools::tags$p(class = "evolucao-identificacao", nomes)
+      htmltools::tags$p(
+        class = "evolucao-identificacao",
+        style = if (!is.null(cor)) paste0("--cor-serie:", cor, ";"),
+        nomes
+      )
+    }
+
+    # Identificando os municípios no cabeçalho da evolução temporal
+    output$evolucao_identificacao <- shiny::renderUI({
+      # Escondendo a identificação quando o município não tem série temporal
+      shiny::req(series_tem_valor(series_principal()))
+      identificacao_series()
     })
+
+    # Repetindo a identificação logo abaixo do título dos blocos
+    output$evolucao_identificacao_blocos <- shiny::renderUI(identificacao_series())
 
     # Inserindo a grade de cartões apenas quando existir algum valor
     output$evolucoes <- shiny::renderUI({
@@ -468,6 +480,12 @@ mod_como_server <- function(id, dados, municipio) {
         )
       })
       htmltools::tags$div(class = "indicadores-grade", cartoes)
+    })
+
+    # Identificando os municípios logo abaixo do seletor de bloco
+    # Com a cor do bloco escolhido, para casar com o traço dos gráficos
+    output$indicadores_identificacao <- shiny::renderUI({
+      identificacao_series(cor_linha_medida(bloco_indicadores()))
     })
   })
 }
