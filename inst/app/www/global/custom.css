@@ -1875,14 +1875,13 @@ input:focus-visible,
   text-align: center;
 }
 
-/* Tornando o SVG das pétalas responsivo e com leve profundidade */
+/* Tornando o SVG das pétalas responsivo, sem filtro para não pesar na rolagem */
 /* O limite de altura cresce na seção de uma coluna sem esticar o desenho */
 .svg-petalas {
   width: 100%;
   height: auto;
   max-height: 470px;
   overflow: visible;
-  filter: drop-shadow(0 4px 8px rgb(var(--cor-azul-escuro-rgb) / 0.05));
 }
 
 /* Mantendo a silhueta de referência como pano de fundo, sem capturar o mouse */
@@ -1906,10 +1905,10 @@ input:focus-visible,
   outline: none;
 }
 
+/* Destacando a pétala sob o mouse ou foco sem aplicar filtro de sombra */
 .grupo-petala:hover,
 .grupo-petala:focus-visible {
   opacity: 0.95;
-  filter: drop-shadow(0 2px 6px rgb(var(--cor-preto-rgb) / 0.2));
 }
 
 /* Aumentando o círculo do valor quando a pétala está em destaque */
@@ -2117,11 +2116,10 @@ input:focus-visible,
   transition-delay: 0s;
 }
 
-/* Desligando os esqueletos depois do carregamento inicial da página */
+/* Desligando os esqueletos de vez depois do carregamento inicial da página */
+/* Usando display none para interromper o brilho escondido que pesava na rolagem */
 html.pagina-carregada .esqueleto-slot > .esqueleto {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  transition: none;
+  display: none !important;
 }
 
 /* Criando a base comum dos esqueletos */
