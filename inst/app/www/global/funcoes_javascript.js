@@ -835,6 +835,7 @@ document.addEventListener("input", function (evento) {
 (function () {
   var links = [];
   var secoes = [];
+  var secaoAtiva = null;
 
   /* Reunindo os pares link/âncora existentes na página */
   function coletar() {
@@ -848,6 +849,7 @@ document.addEventListener("input", function (evento) {
       var secao = document.querySelector(destino);
       if (secao) secoes.push({ link: link, secao: secao });
     });
+    secaoAtiva = null;
   }
 
   /* Descobrindo qual seção já entrou na área visível pelo alto da janela */
@@ -858,6 +860,9 @@ document.addEventListener("input", function (evento) {
       var topo = item.secao.getBoundingClientRect().top;
       if (topo <= 200) ativa = item;
     });
+    /* Evitando reescrever as classes a cada quadro quando nada mudou */
+    if (ativa === secaoAtiva) return;
+    secaoAtiva = ativa;
     links.forEach(function (link) {
       link.classList.remove("active");
       link.removeAttribute("aria-current");
