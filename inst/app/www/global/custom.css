@@ -1884,6 +1884,18 @@ input:focus-visible,
   overflow: visible;
 }
 
+/* Suavizando o apagamento das guias durante o foco da pétala */
+.camada-guias {
+  transition: opacity 0.2s ease;
+}
+
+/* Ampliando a área de hover de cada pétala para todo o leque */
+.area-petala {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+
 /* Mantendo a silhueta de referência como pano de fundo, sem capturar o mouse */
 .silhueta-petala {
   pointer-events: none;
@@ -1899,16 +1911,33 @@ input:focus-visible,
   transition: opacity 0.2s ease;
 }
 
+/* Suavizando a troca de preenchimento e contorno da pétala ativa */
+.forma-petala {
+  transition: fill-opacity 0.2s ease, stroke-width 0.2s ease;
+}
+
 /* Removendo o contorno padrão e mantendo o destaque próprio do foco */
 .grupo-petala:focus,
 .grupo-petala:focus-visible {
   outline: none;
 }
 
-/* Destacando a pétala sob o mouse ou foco sem aplicar filtro de sombra */
-.grupo-petala:hover,
-.grupo-petala:focus-visible {
-  opacity: 0.95;
+/* Apagando as demais pétalas enquanto uma pétala está em foco */
+.svg-petalas:has(.grupo-petala:is(:hover, :focus-visible))
+  .grupo-petala:not(:is(:hover, :focus-visible)) {
+  opacity: 0.3;
+}
+
+/* Apagando as guias de fundo para realçar a pétala ativa */
+.svg-petalas:has(.grupo-petala:is(:hover, :focus-visible)) .camada-guias {
+  opacity: 0.45;
+}
+
+/* Reforçando o preenchimento e o contorno da pétala sob o mouse ou foco */
+.grupo-petala:hover .forma-petala,
+.grupo-petala:focus-visible .forma-petala {
+  fill-opacity: 0.95;
+  stroke-width: 2.2;
 }
 
 /* Aumentando o círculo do valor quando a pétala está em destaque */
@@ -1928,6 +1957,13 @@ input:focus-visible,
   font-weight: 600;
   fill: var(--cor-texto-suave);
   pointer-events: none;
+  transition: fill 0.2s ease;
+}
+
+/* Escurecendo o nome do bloco junto com o destaque da pétala */
+.grupo-petala:hover .rotulo-petala,
+.grupo-petala:focus-visible .rotulo-petala {
+  fill: var(--cor-azul-escuro);
 }
 
 /* Deixando a seta da tooltip branca, igual ao fundo do cartão */

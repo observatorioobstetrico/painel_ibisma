@@ -218,6 +218,12 @@ petala_svg <- function(i, blocos) {
       nome, blocos$valor[i], blocos$categoria[i],
       blocos$pos_nac[i], blocos$total_nac[i], blocos$medida[i]
     ),
+    # Cobrindo todo o leque com uma área invisível para facilitar o hover
+    htmltools::tags$path(
+      d = PETALAS_CAMINHO,
+      transform = transformacao_petala(angulo, PETALAS_ESCALA_MAXIMA),
+      class = "area-petala"
+    ),
     # Forma da pétala rotacionada e escalada pelo valor do bloco
     htmltools::tags$path(
       d = PETALAS_CAMINHO,
