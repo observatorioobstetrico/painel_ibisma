@@ -15,7 +15,7 @@ CSS_TOOLTIP <- paste0(
 )
 
 # Definindo as alturas dos gráficos de evolução do índice e dos blocos
-ALTURA_GRAFICO_IBISMA <- 240L
+ALTURA_GRAFICO_VIDAS <- 240L
 ALTURA_GRAFICO_BLOCO <- 170L
 
 # Definindo a altura dos gráficos de evolução dos indicadores, igual à dos blocos
@@ -596,7 +596,7 @@ grade_evolucao_ui <- function(ns) {
   htmltools::tags$div(
     class = "evolucao-grade",
     # Destacando o Índice VIDAS em um cartão de largura total
-    cartao("indice_final", ALTURA_GRAFICO_IBISMA, "evolucao-card--ibisma"),
+    cartao("indice_final", ALTURA_GRAFICO_VIDAS, "evolucao-card--vidas"),
     # Organizando os seis blocos em pequenos múltiplos
     htmltools::tags$h4(class = "evolucao-grade__titulo", "Dimensões do Índice VIDAS"),
     # Identificando os municípios logo abaixo do título dos blocos

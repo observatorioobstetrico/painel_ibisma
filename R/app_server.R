@@ -6,7 +6,7 @@
 #' @noRd
 app_server <- function(input, output, session) {
   # Preparando a base do painel uma única vez por processo
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
 
   # Compartilhando o município selecionado entre as duas seções do painel
   municipio <- shiny::reactiveVal(municipio_padrao(dados))

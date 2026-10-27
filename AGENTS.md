@@ -1,4 +1,4 @@
-# AGENTS.md — painel_ibisma
+# AGENTS.md — painel_vidas
 
 Repositório voltado à construção de um painel de visualização para o Índice VIDAS - Vigilância dos
 Indicadores, Determinantes e Assistência à Saúde das Mulheres. O índice é composto por seis dimensões: Social; Planejamento
@@ -54,7 +54,7 @@ habituadas com a codebase.
 - Regenerar os dados do painel (depois de mudar a base bruta):
   `data-raw/cria_rda.R` é um script linear, rodável passo a passo (botão Source
   do RStudio ou `Rscript`), que lê os CSVs de `data-raw/databases/` e gera os
-  arquivos prontos (`inst/app/data/dados_ibisma.rds` e `tabela_ano_*.rds`) e a
+  arquivos prontos (`inst/app/data/dados_vidas.rds` e `tabela_ano_*.rds`) e a
   malha (chave `gerar_malha`, desligada por padrão). O script não carrega o
   pacote, o app apenas lê `inst/app/data/` e o pacote não tem dado próprio.
 

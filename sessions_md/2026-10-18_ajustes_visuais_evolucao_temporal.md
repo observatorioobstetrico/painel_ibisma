@@ -1,8 +1,8 @@
 # Sessão 35 — Ajustes visuais da evolução temporal (18/10/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** redesenhar a apresentação da seção "Evolução ao longo do tempo"
-  do módulo Como? (IBISMA + seis blocos), trocando os rótulos no fim das linhas
+  do módulo Como? (VIDAS + seis blocos), trocando os rótulos no fim das linhas
   e o traço pontilhado por uma linguagem de séries mais legível, com prints
   headless a cada rodada.
 
@@ -31,7 +31,7 @@
   com `cap = "round"` e bolinha vazada (miolo branco, anel de 2 px) sempre
   visível.
 - **Tamanhos iguais nas duas séries**, a meio caminho dos antigos: 5,5 nos
-  blocos (era 4,5 na principal e 6 na comparação) e 7 no IBISMA (era 6 e 7,5).
+  blocos (era 4,5 na principal e 6 na comparação) e 7 no VIDAS (era 6 e 7,5).
 - **Social escurecido** para `#D99E00` (`COR_LINHA_SOCIAL`): o amarelo sumia em
   traço fino sobre o branco. A cor de identificação do bloco continua amarela
   nas pétalas, no mapa e na legenda.
@@ -72,7 +72,7 @@
 
 - A bolinha colorida do título (`evolucao-card__ponto`) foi removida do R e do
   CSS (junto da variável `--cor-medida` inline).
-- Títulos dos cartões e "Blocos do IBISMA" passaram de peso 700 para 600.
+- Títulos dos cartões e "Blocos do VIDAS" passaram de peso 700 para 600.
 
 ## 7. Tentativas implementadas e revertidas (histórico)
 
@@ -84,7 +84,7 @@
   principal, com a distinção só pelo traço e pela bolinha.
 - **Bolinhas da comparação só no hover** — revertido para sempre visíveis.
 - **Chips em pílula com borda** — testados e revertidos ao formato sem moldura.
-- **Rótulos à direita do último ponto no IBISMA** (`endLabel` com margem
+- **Rótulos à direita do último ponto no VIDAS** (`endLabel` com margem
   reservada no grid) — implementados e removidos a pedido.
 
 ## 8. Testes e validação

@@ -35,7 +35,7 @@ exigir_pipeline <- function() {
 
 test_that("os dados prontos têm cadastro, anos e séries completos", {
   exigir_pipeline()
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
 
   # O cadastro tem os municípios e os anos da base bruta
   expect_equal(dados$anos, sort(unique(indice_referencia$ano)))
@@ -58,7 +58,7 @@ test_that("os dados prontos têm cadastro, anos e séries completos", {
 
 test_that("as séries prontas batem com os CSVs da pipeline", {
   exigir_pipeline()
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   testthat::skip_if_not(
     tem_indicadores(dados),
     "séries prontas sem indicadores (rode data-raw/cria_rda.R)"
@@ -104,7 +104,7 @@ test_that("as séries prontas batem com os CSVs da pipeline", {
 
 test_that("as tabelas anuais usam as medidas e as categorias do painel", {
   exigir_pipeline()
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
 
   # A pipeline precisa entregar os blocos e o índice que viram as medidas do painel
   expect_true(all(c(BLOCOS$medida, "indice_mf_v1") %in% names(indice_referencia)))
@@ -118,7 +118,7 @@ test_that("as tabelas anuais usam as medidas e as categorias do painel", {
 })
 
 test_that("as categorias seguem os quintis e os rankings do ano", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   ano <- max(dados$anos)
 
   for (medida in MEDIDAS$medida) {
@@ -159,7 +159,7 @@ test_that("as categorias seguem os quintis e os rankings do ano", {
 })
 
 test_that("o resumo do município alimenta o palco com índice, rankings e blocos", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   ano_ref <- max(dados$anos)
   cod <- municipio_padrao(dados)
 
@@ -217,7 +217,7 @@ test_that("o resumo do município alimenta o palco com índice, rankings e bloco
 })
 
 test_that("o palco fica vazio quando o município não tem dado no ano", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
 
   # Município com ano faltante (Borá em 2023)
   lacuna <- dados$series[is.na(dados$series$indice_final), c("codmunres", "ano")][1, ]
@@ -242,7 +242,7 @@ test_that("o palco fica vazio quando o município não tem dado no ano", {
 })
 
 test_that("series_municipio monta as medidas e os indicadores em colunas", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   cod <- dados$municipios$codmunres[1]
 
   colunas_esperadas <- c(
@@ -452,7 +452,7 @@ test_that("os limites das medidas fecham o eixo em cinco marcações inteiras", 
 })
 
 test_that("a evolução usa limites de eixo por grupo de medidas", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   principal <- municipio_padrao(dados)
   comparado <- dados$municipios$codmunres[dados$municipios$codmunres != principal][1]
   ano_ref <- max(dados$anos)
@@ -755,7 +755,7 @@ test_that("opções de medida, ano e escopo do ranking estão completas", {
   exigir_pipeline()
   # As medidas do seletor são o dicionário central, com o prefixo "Dimensão" nos rótulos
   expect_equal(MEDIDAS$rotulo[-1], paste("Dimensão", MEDIDAS$nome[-1]))
-  expect_equal(dados_ibisma()$anos, sort(unique(indice_referencia$ano)))
+  expect_equal(dados_vidas()$anos, sort(unique(indice_referencia$ano)))
 
   # Conferindo as opções do seletor de escopo embutidas na própria seção Onde?
   ui <- as.character(mod_onde_ui("onde"))
@@ -769,7 +769,7 @@ test_that("opções de medida, ano e escopo do ranking estão completas", {
   # O Brasil vem primeiro e as 27 UFs completam as opções do escopo
   expect_equal(opcoes$value[1], "nacional")
   expect_equal(nrow(opcoes), 28)
-  siglas_uf <- unique(dados_ibisma()$municipios$sigla_uf)
+  siglas_uf <- unique(dados_vidas()$municipios$sigla_uf)
   expect_setequal(opcoes$value[-1], siglas_uf)
 })
 
@@ -789,14 +789,14 @@ test_that("nome_medida prefixa as dimensões com Dimensão quando pedido", {
 
 test_that("tema_reactable adapta os destaques à cor da medida", {
   # No Índice VIDAS os destaques continuam roxos e com texto branco
-  ibisma <- tema_reactable("indice_final")
-  expect_equal(ibisma$highlightColor, misturar_cores(COR_VIDAS, "#FFFFFF", 0.94))
+  vidas <- tema_reactable("indice_final")
+  expect_equal(vidas$highlightColor, misturar_cores(COR_VIDAS, "#FFFFFF", 0.94))
   expect_equal(
-    ibisma$rowSelectedStyle$backgroundColor,
+    vidas$rowSelectedStyle$backgroundColor,
     misturar_cores(COR_VIDAS, "#FFFFFF", 0.90)
   )
-  expect_equal(ibisma$pageButtonActiveStyle$backgroundColor, COR_VIDAS)
-  expect_equal(ibisma$pageButtonActiveStyle$color, "#FFFFFF")
+  expect_equal(vidas$pageButtonActiveStyle$backgroundColor, COR_VIDAS)
+  expect_equal(vidas$pageButtonActiveStyle$color, "#FFFFFF")
 
   # Em um bloco, hover, linha selecionada e paginação usam a cor do bloco
   bloco <- tema_reactable("bloco1")
@@ -826,7 +826,7 @@ test_that("tema_reactable adapta os destaques à cor da medida", {
 })
 
 test_that("o ranking marca o município em foco na montagem e mantém o foco", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   ano <- max(dados$anos)
   foco <- municipio_padrao(dados)
 
@@ -958,7 +958,7 @@ test_that("o ranking explica a primeira posição e resume acima da tabela", {
 })
 
 test_that("a descrição e a legenda acompanham a medida escolhida", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   municipio <- shiny::reactiveVal(municipio_padrao(dados))
   shiny::testServer(
     mod_onde_server,
@@ -989,7 +989,7 @@ test_that("a descrição e a legenda acompanham a medida escolhida", {
 })
 
 test_that("o ano compartilhado mantém os seletores sincronizados", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   municipio <- shiny::reactiveVal(municipio_padrao(dados))
   ano_outro <- min(dados$anos)
   chamadas <- new.env(parent = emptyenv())
@@ -1068,12 +1068,12 @@ test_that("atualizar_municipios envia os dados compactos sem aviso de serializa�
     capturada$tipo <- tipo
     capturada$mensagem <- mensagem
   })
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   malha <- carregar_malha_municipios()
   base <- dados_mapa(dados, max(dados$anos), "indice_final")
   atualizar_municipios(sessao, "mapa", base, "indice_final")
 
-  expect_equal(capturada$tipo, "ibisma_mapa_atualiza")
+  expect_equal(capturada$tipo, "vidas_mapa_atualiza")
   mensagem <- capturada$mensagem
   # Os dados vão em vetores alinhados à malha, sem HTML de tooltip
   expect_equal(mensagem$id, "mapa")
@@ -1104,11 +1104,11 @@ test_that("enviar_desenho_municipios junta o desenho pronto aos dados do mapa", 
     capturada$tipo <- tipo
     capturada$mensagem <- mensagem
   })
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   base <- dados_mapa(dados, max(dados$anos), "indice_final")
   enviar_desenho_municipios(sessao, "mapa", base, "indice_final")
 
-  expect_equal(capturada$tipo, "ibisma_mapa_desenha")
+  expect_equal(capturada$tipo, "vidas_mapa_desenha")
   mensagem <- capturada$mensagem
   desenho <- carregar_desenho_municipios()
   expect_equal(mensagem$layers, desenho$layers)
@@ -1153,7 +1153,7 @@ test_that("badge_categoria_html gera o HTML dos selos de categoria", {
 })
 
 test_that("dados_mapa alinha os valores à malha em formato compacto", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   malha <- carregar_malha_municipios()
   ano <- max(dados$anos)
   base <- dados_mapa(dados, ano, "indice_final")
@@ -1186,7 +1186,7 @@ test_that("dados_mapa alinha os valores à malha em formato compacto", {
 })
 
 test_that("mensagem_mapa usa a paleta e as cores de texto da medida exibida", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   ano <- max(dados$anos)
 
   # A mensagem do índice leva a rampa roxa e os textos de contraste
@@ -1204,7 +1204,7 @@ test_that("mensagem_mapa usa a paleta e as cores de texto da medida exibida", {
 })
 
 test_that("municipio_padrao escolhe o menor Índice VIDAS do último ano", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   base <- valores_ano(dados, max(dados$anos), "indice_final")
   expect_equal(
     municipio_padrao(dados),
@@ -1213,7 +1213,7 @@ test_that("municipio_padrao escolhe o menor Índice VIDAS do último ano", {
 })
 
 test_that("nome_municipio devolve nome e sigla", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   info <- dados$municipios[1, ]
   expect_equal(
     nome_municipio(dados, info$codmunres),
@@ -1223,7 +1223,7 @@ test_that("nome_municipio devolve nome e sigla", {
 })
 
 test_that("nome_uf traduz a sigla no nome por extenso", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   info <- dados$municipios[1, ]
   expect_equal(nome_uf(info$sigla_uf), info$uf)
   expect_true(is.na(nome_uf("XX")))
@@ -1277,7 +1277,7 @@ test_that("limites_escopo devolve o retângulo do Brasil ou da UF escolhida", {
   }
 
   # Todas as siglas do seletor cabem no quadro máximo do mapa
-  for (sigla in unique(dados_ibisma()$municipios$sigla_uf)) {
+  for (sigla in unique(dados_vidas()$municipios$sigla_uf)) {
     limites <- limites_escopo(sigla)
     expect_true(limites$lng1 >= -75 && limites$lng2 <= -32)
     expect_true(limites$lat1 >= -34.5 && limites$lat2 <= 6)
@@ -1411,7 +1411,7 @@ test_that("aplicar_escopo destaca a UF antes de voar até ela", {
 })
 
 test_that("o escopo do ranking aplica o destaque e o voo conforme a escolha", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   municipio <- shiny::reactiveVal(municipio_padrao(dados))
   chamadas <- new.env(parent = emptyenv())
   chamadas$escopos <- character(0)
@@ -1643,7 +1643,7 @@ test_that("a silhueta de referência permanece visível com valor zerado", {
 })
 
 test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   ano <- max(dados$anos)
   cod <- municipio_padrao(dados)
 
@@ -1788,7 +1788,7 @@ test_that("perfil_rankings monta trilhos interativos com tooltip", {
 })
 
 test_that("perfil_palco mostra estado vazio quando não há dado no ano", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   cod <- municipio_padrao(dados)
   municipio <- dados$municipios[dados$municipios$codmunres == cod, ]
   html <- as.character(perfil_palco(municipio, NULL, ano = max(dados$anos)))
@@ -2094,7 +2094,7 @@ test_that("o esqueleto dos indicadores reserva os cartões do bloco padrão", {
 })
 
 test_that("o módulo exibe os indicadores do bloco selecionado", {
-  dados <- dados_ibisma()
+  dados <- dados_vidas()
   testthat::skip_if_not(
     tem_indicadores(dados),
     "séries prontas sem indicadores (rode data-raw/cria_rda.R)"

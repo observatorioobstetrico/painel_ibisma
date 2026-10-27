@@ -5,27 +5,27 @@
 # =============================================================================
 
 # Criando um cache em memória para não reler os arquivos a cada sessão
-.ibisma_cache <- new.env(parent = emptyenv())
+.vidas_cache <- new.env(parent = emptyenv())
 
 #' Definindo uma função que obtém a base preparada do painel com cache
 #'
 #' @return Lista com o cadastro de municípios, os anos e as séries temporais.
 #' Usada em: app_server.R (abertura do app), fct_dados.R (internamente) e mod_como.R.
 #' @noRd
-dados_ibisma <- function() {
+dados_vidas <- function() {
   # Lendo o arquivo uma única vez por processo e reutilizando depois
-  if (is.null(.ibisma_cache$dados)) {
-    dados <- readRDS(app_sys("app", "data", "dados_ibisma.rds"))
+  if (is.null(.vidas_cache$dados)) {
+    dados <- readRDS(app_sys("app", "data", "dados_vidas.rds"))
     # Apontando a pasta onde ficam as tabelas anuais geradas
     dados$pasta_tabelas <- app_sys("app", "data")
-    .ibisma_cache$dados <- dados
+    .vidas_cache$dados <- dados
   }
-  .ibisma_cache$dados
+  .vidas_cache$dados
 }
 
 #' Definindo uma função que lê a tabela anual em cache
 #'
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @param ano Ano de referência.
 #' @return Data frame com uma linha por município e medida.
 #' Usada em: fct_dados.R (valores_ano) e mod_como.R (resumo_municipio).
@@ -33,8 +33,8 @@ dados_ibisma <- function() {
 tabela_ano <- function(dados, ano) {
   # Guardando em memória a tabela de cada ano já lida
   chave <- paste0("tabela_", dados$pasta_tabelas, "_", ano)
-  if (!is.null(.ibisma_cache[[chave]])) {
-    return(.ibisma_cache[[chave]])
+  if (!is.null(.vidas_cache[[chave]])) {
+    return(.vidas_cache[[chave]])
   }
 
   # Lendo o arquivo gerado por data-raw/cria_rda.R
@@ -48,13 +48,13 @@ tabela_ano <- function(dados, ano) {
       "Rode data-raw/cria_rda.R para gerar os arquivos."
     )
   }
-  .ibisma_cache[[chave]] <- readRDS(arquivo)
-  .ibisma_cache[[chave]]
+  .vidas_cache[[chave]] <- readRDS(arquivo)
+  .vidas_cache[[chave]]
 }
 
 #' Definindo uma função que obtém os valores de uma medida em um ano
 #'
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida ("indice_final", "bloco1"...).
 #' @return Data frame com uma linha por município, já com categoria e rankings.
@@ -68,11 +68,11 @@ valores_ano <- function(dados, ano, medida) {
 
 #' Definindo uma função que descobre o município padrão de abertura do painel
 #'
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @return Código do município com o menor Índice VIDAS do ano mais recente.
 #' Usada em: app_server.R (município de abertura) e mod_como.R (valor inicial do seletor).
 #' @noRd
-municipio_padrao <- function(dados = dados_ibisma()) {
+municipio_padrao <- function(dados = dados_vidas()) {
   # Abrindo o painel no município prioritário, com o menor Índice VIDAS do ano
   ano <- max(dados$anos)
   base <- valores_ano(dados, ano, "indice_final")
@@ -81,7 +81,7 @@ municipio_padrao <- function(dados = dados_ibisma()) {
 
 #' Definindo uma função que obtém as séries das medidas e dos indicadores de um município
 #'
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @param codmunres Código do município.
 #' @param colunas Colunas pedidas; por padrão as sete medidas e os indicadores.
 #' @return Data frame com uma linha por ano e uma coluna por coluna disponível.
@@ -116,7 +116,7 @@ series_tem_valor <- function(series, colunas = MEDIDAS$medida) {
 
 #' Definindo uma função que verifica se as séries já trazem os indicadores
 #'
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @return TRUE quando todas as colunas de INDICADORES existem nas séries.
 #' Usada em: mod_como.R (exibição da seção de indicadores).
 #' @noRd
@@ -149,7 +149,7 @@ info_indicador <- function(indicador) {
 
 #' Definindo uma função que obtém o nome de um município pelo código
 #'
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @param codmunres Código do município.
 #' @return Nome do município com a sigla da UF.
 #' Usada em: mod_como.R (evolução e identificação dos gráficos).
@@ -170,7 +170,7 @@ nome_municipio <- function(dados, codmunres) {
 #' @noRd
 nome_uf <- function(sigla) {
   # Buscando o nome nos municípios já preparados, sem tocar na base bruta
-  ufs <- unique(dados_ibisma()$municipios[, c("sigla_uf", "uf")])
+  ufs <- unique(dados_vidas()$municipios[, c("sigla_uf", "uf")])
   ufs$uf[match(sigla, ufs$sigla_uf)]
 }
 

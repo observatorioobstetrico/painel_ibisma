@@ -1,0 +1,10 @@
+name: painel_vidas
+title: painel_vidas
+username: observatorioobstetrico
+account: observatorioobstetrico
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 18291726
+bundleId: 12745947
+url: https://observatorioobstetrico.shinyapps.io/painel_vidas/
+version: 1

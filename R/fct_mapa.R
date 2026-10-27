@@ -65,7 +65,7 @@ carregar_desenho_municipios <- function() {
 #' Os valores ficam na ordem da malha (a mesma das camadas do mapa) e os textos
 #' são curtos: o HTML do tooltip é montado no JavaScript do painel.
 #'
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @param ano Ano de referência.
 #' @param medida Identificador da medida exibida.
 #' @return Data frame com nome, UF, valor em texto e código da categoria.
@@ -175,7 +175,7 @@ enviar_desenho_municipios <- function(session, output_id, base, medida) {
   mensagem$layers <- desenho$layers
 
   # Criando as camadas e preenchendo cores e tooltips em uma única mensagem
-  session$sendCustomMessage("ibisma_mapa_desenha", mensagem)
+  session$sendCustomMessage("vidas_mapa_desenha", mensagem)
 }
 
 #' Definindo uma função que envia ao navegador a atualização de cores e tooltips do mapa
@@ -190,7 +190,7 @@ enviar_desenho_municipios <- function(session, output_id, base, medida) {
 atualizar_municipios <- function(session, output_id, base, medida) {
   # Atualizando os polígonos já desenhados sem reenviar a geometria
   session$sendCustomMessage(
-    "ibisma_mapa_atualiza",
+    "vidas_mapa_atualiza",
     mensagem_mapa(output_id, base, medida)
   )
 }

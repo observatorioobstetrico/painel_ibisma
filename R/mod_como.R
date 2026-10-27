@@ -15,14 +15,14 @@ mod_como_ui <- function(id) {
 
   ## Obs.: este bloco usa funções auxiliares de fct_dados, fct_ui e fct_esqueleto.
   # Montando as opções de municípios em ordem alfabética, com a UF no rótulo
-  municipios <- dados_ibisma()$municipios
+  municipios <- dados_vidas()$municipios
   municipios <- municipios[order(municipios$municipio, municipios$sigla_uf), ]
   municipios <- stats::setNames(
     municipios$codmunres,
     paste0(municipios$municipio, " (", municipios$sigla_uf, ")")
   )
   # Montando as opções de ano em ordem decrescente
-  anos_ordem <- rev(dados_ibisma()$anos)
+  anos_ordem <- rev(dados_vidas()$anos)
   anos <- stats::setNames(anos_ordem, anos_ordem)
   # Incluindo a opção de não comparar com nenhum município
   opcoes_comparacao <- c("Nenhum" = "nenhum", municipios)
@@ -47,7 +47,7 @@ mod_como_ui <- function(id) {
         htmltools::tags$span(class = "controle-texto", "Ver"),
         seletor_inline(ns("municipio"), municipios, selected = municipio_padrao(), largura = "320px"),
         htmltools::tags$span(class = "controle-texto", "em"),
-        seletor_inline(ns("ano"), anos, selected = max(dados_ibisma()$anos)),
+        seletor_inline(ns("ano"), anos, selected = max(dados_vidas()$anos)),
         htmltools::tags$span(class = "controle-texto", "e comparar com"),
         seletor_inline(ns("comparar"), opcoes_comparacao, selected = "nenhum", largura = "320px")
       ),
@@ -100,7 +100,7 @@ mod_como_ui <- function(id) {
       ),
       # Indicadores em detalhe, um bloco por vez, para os mesmos municípios
       # A seção só aparece quando a base reconstrói as séries com os indicadores
-      if (tem_indicadores(dados_ibisma())) {
+      if (tem_indicadores(dados_vidas())) {
         htmltools::tags$div(
           class = "painel-bloco painel-bloco--indicadores",
           htmltools::tags$div(
@@ -146,7 +146,7 @@ mod_como_ui <- function(id) {
 #' Server do módulo Como?
 #'
 #' @param id Identificador do módulo.
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @param municipio Reativo compartilhado com o município selecionado.
 #' @param ano Reativo compartilhado com o ano selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.
@@ -308,7 +308,7 @@ mod_como_server <- function(id, dados, municipio, ano) {
 
     # Avisando o navegador para animar a transição dos palcos
     shiny::observeEvent(tem_comparacao(), {
-      session$sendCustomMessage("ibisma_comparacao", list(
+      session$sendCustomMessage("vidas_comparacao", list(
         palcos = ns("palcos"),
         ativa = tem_comparacao()
       ))
@@ -339,7 +339,7 @@ mod_como_server <- function(id, dados, municipio, ano) {
     }
 
     # Dando ao Índice VIDAS uma escala própria, mais estreita que a dos blocos
-    limites_ibisma <- shiny::reactive(limites_do_grupo("indice_final"))
+    limites_vidas <- shiny::reactive(limites_do_grupo("indice_final"))
     # Compartilhando a escala dos seis blocos para os cartões serem comparáveis
     limites_blocos <- shiny::reactive(limites_do_grupo(BLOCOS$medida))
 
@@ -348,7 +348,7 @@ mod_como_server <- function(id, dados, municipio, ano) {
       # Desenhando a linha comparada apenas quando ela tem algum valor
       comparacao <- if (comparacao_tem_serie()) series_comparacao() else NULL
       # Usando a escala compartilhada do grupo de medidas do gráfico
-      limites <- if (identical(medida, "indice_final")) limites_ibisma() else limites_blocos()
+      limites <- if (identical(medida, "indice_final")) limites_vidas() else limites_blocos()
       grafico_evolucao(
         series_principal(),
         medida = medida,

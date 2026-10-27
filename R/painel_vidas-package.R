@@ -1,4 +1,4 @@
-#' painel_ibisma: Painel do Índice VIDAS
+#' painel_vidas: Painel do Índice VIDAS
 #'
 #' Pacote que implementa o painel interativo do Índice VIDAS com Shiny e golem.
 #'

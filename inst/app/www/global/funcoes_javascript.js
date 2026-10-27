@@ -6,7 +6,7 @@
    ============================================================================= */
 
 /* Abrindo e fechando as duas colunas quando a comparação é ligada ou desligada */
-Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
+Shiny.addCustomMessageHandler("vidas_comparacao", function (mensagem) {
   /* Aplicando a classe que o CSS usa para animar os palcos lado a lado */
   var el = document.getElementById(mensagem.palcos);
   if (el) el.classList.toggle("dupla--comparando", !!mensagem.ativa);
@@ -38,7 +38,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   var OPCOES_TOOLTIP = {
     direction: "auto",
     opacity: 1,
-    className: "tooltip-ibisma"
+    className: "tooltip-vidas"
   };
 
   /* Guardando a ordem das camadas e os dados de cada mapa do painel */
@@ -165,7 +165,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       /* Repintando apenas o preenchimento, já que a divisa branca é fixa */
       camada.setStyle({ fillColor: cor, fillOpacity: 0.95 });
       /* Anotando o índice do município para o hover achar os dados sem busca */
-      camada._ibisma_indice = i;
+      camada._vidas_indice = i;
       /* Fazendo os eventos da camada subirem ao mapa, como no FeatureGroup */
       camada.addEventParent(mapa);
     }
@@ -178,7 +178,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   /* Criando um único tooltip por mapa, atualizado pelo município sob o cursor */
   function prepararTooltip(mapa, id) {
     /* Criando o tooltip apenas na primeira vez em que o mapa é desenhado */
-    if (mapa._ibismaTooltip) return;
+    if (mapa._vidasTooltip) return;
     var tooltip = L.tooltip(OPCOES_TOOLTIP);
     var mostrando = false;
 
@@ -209,7 +209,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     /* Mostrando o tooltip do município que o cursor acabou de encontrar */
     mapa.on("mouseover", function (e) {
       if (!PODE_HOVER) return;
-      mostrar(e.layer && e.layer._ibisma_indice, e.latlng);
+      mostrar(e.layer && e.layer._vidas_indice, e.latlng);
     });
 
     /* Acompanhando o cursor enquanto o tooltip estiver à mostra */
@@ -220,7 +220,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     /* Escondendo o tooltip ao sair do município com o mouse */
     mapa.on("mouseout", function (e) {
       if (!PODE_HOVER) return;
-      if (!e.layer || typeof e.layer._ibisma_indice !== "number") return;
+      if (!e.layer || typeof e.layer._vidas_indice !== "number") return;
       esconder();
     });
 
@@ -233,7 +233,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
          o clique reexibe o tooltip tanto no toque quanto no mouse */
       if (e.propagatedFrom) {
         cliqueEmMunicipio = true;
-        mostrar(e.layer && e.layer._ibisma_indice, e.latlng);
+        mostrar(e.layer && e.layer._vidas_indice, e.latlng);
         return;
       }
       /* Clicando fora de um município, o tooltip fixado se fecha */
@@ -247,11 +247,11 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     });
 
     /* Guardando a instância para não criar um segundo tooltip no mesmo mapa */
-    mapa._ibismaTooltip = tooltip;
+    mapa._vidasTooltip = tooltip;
   }
 
   /* Criando as camadas dos municípios com o binding do leaflet e os dados iniciais */
-  Shiny.addCustomMessageHandler("ibisma_mapa_desenha", function (mensagem) {
+  Shiny.addCustomMessageHandler("vidas_mapa_desenha", function (mensagem) {
     var widget = window.HTMLWidgets && HTMLWidgets.find("#" + mensagem.id);
     if (!widget || typeof widget.getMap !== "function") return;
     var mapa = widget.getMap();
@@ -278,7 +278,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   });
 
   /* Atualizando as cores dos municípios já desenhados no mapa */
-  Shiny.addCustomMessageHandler("ibisma_mapa_atualiza", function (mensagem) {
+  Shiny.addCustomMessageHandler("vidas_mapa_atualiza", function (mensagem) {
     var widget = window.HTMLWidgets && HTMLWidgets.find("#" + mensagem.id);
     if (!widget || typeof widget.getMap !== "function") return;
     var mapa = widget.getMap();
@@ -342,7 +342,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
     if (bootstrap.Tooltip.getInstance(el)) return;
     var opcoes = {
       placement: "top",
-      customClass: "tooltip-ibisma",
+      customClass: "tooltip-vidas",
       container: "body",
       delay: { show: 80, hide: 40 }
     };
@@ -353,7 +353,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       opcoes.sanitize = false;
       /* A régua do índice usa uma tooltip mais larga */
       if (el.dataset.tooltipLarga) {
-        opcoes.customClass += " tooltip-ibisma--larga";
+        opcoes.customClass += " tooltip-vidas--larga";
       }
     } else {
       /* Os campos territoriais usam o texto completo guardado em data */
@@ -384,7 +384,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
   function garantirTooltipCursor() {
     if (tooltipCursor) return tooltipCursor;
     tooltipCursor = document.createElement("div");
-    tooltipCursor.className = "tooltip tooltip-ibisma tooltip-cursor";
+    tooltipCursor.className = "tooltip tooltip-vidas tooltip-cursor";
     tooltipCursor.setAttribute("role", "tooltip");
     tooltipCursor.innerHTML = '<div class="tooltip-inner"></div>';
     document.body.appendChild(tooltipCursor);
@@ -764,7 +764,7 @@ document.addEventListener("input", function (evento) {
 
 /* Posicionando as seções exatamente abaixo da navbar ao clicar nas âncoras */
 (function () {
-  var navbar = document.querySelector(".navbar-ibisma");
+  var navbar = document.querySelector(".navbar-vidas");
   if (!navbar) return;
 
   /* Gravando a altura real da navbar para o CSS compensar o scroll */
@@ -806,13 +806,13 @@ document.addEventListener("input", function (evento) {
   });
 
   /* Interceptando os cliques para fechar o menu antes de calcular a posição */
-  document.querySelectorAll('.navbar-ibisma a[href^="#"]').forEach(function (link) {
+  document.querySelectorAll('.navbar-vidas a[href^="#"]').forEach(function (link) {
     link.addEventListener("click", function (evento) {
       var destino = link.getAttribute("href");
       var secao = destino && document.querySelector(destino);
       if (!secao) return;
       evento.preventDefault();
-      var menu = document.getElementById("menu-ibisma");
+      var menu = document.getElementById("menu-vidas");
       var menuAberto = menu && menu.classList.contains("show");
       var concluir = function () {
         medirNavbar();
@@ -841,7 +841,7 @@ document.addEventListener("input", function (evento) {
   /* Reunindo os pares link/âncora existentes na página */
   function coletar() {
     links = Array.prototype.slice.call(
-      document.querySelectorAll(".navbar-ibisma .nav-link")
+      document.querySelectorAll(".navbar-vidas .nav-link")
     );
     secoes = [];
     links.forEach(function (link) {
@@ -892,9 +892,9 @@ document.addEventListener("input", function (evento) {
     window.addEventListener("resize", agendar);
 
     /* Fechando o menu móvel ao escolher uma seção */
-    document.querySelectorAll("#menu-ibisma .nav-link").forEach(function (link) {
+    document.querySelectorAll("#menu-vidas .nav-link").forEach(function (link) {
       link.addEventListener("click", function () {
-        var menu = document.getElementById("menu-ibisma");
+        var menu = document.getElementById("menu-vidas");
         if (menu && menu.classList.contains("show")) {
           var colapso = bootstrap.Collapse.getInstance(menu);
           if (colapso) colapso.hide();

@@ -4,4 +4,4 @@
 
 pkgload::load_all(export_all = FALSE, helpers = FALSE, attach_testthat = FALSE)
 options("golem.app.prod" = TRUE)
-painel_ibisma::run_app() # add parameters here (if any)
+painel_vidas::run_app() # add parameters here (if any)

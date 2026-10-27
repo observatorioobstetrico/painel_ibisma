@@ -17,11 +17,11 @@ mod_onde_ui <- function(id) {
   medidas <- stats::setNames(MEDIDAS$medida, MEDIDAS$rotulo)
 
   # Montando as opções de ano em ordem decrescente
-  anos_ordem <- rev(dados_ibisma()$anos)
+  anos_ordem <- rev(dados_vidas()$anos)
   anos <- stats::setNames(anos_ordem, anos_ordem)
 
   # Montando as opções de escopo do ranking com o Brasil à frente das UFs
-  ufs_escopo <- unique(dados_ibisma()$municipios[, c("sigla_uf", "uf")])
+  ufs_escopo <- unique(dados_vidas()$municipios[, c("sigla_uf", "uf")])
   ufs_escopo <- ufs_escopo[order(ufs_escopo$uf), ]
   escopos <- stats::setNames(
     c("nacional", ufs_escopo$sigla_uf),
@@ -51,7 +51,7 @@ mod_onde_ui <- function(id) {
           largura = "300px", busca = FALSE
         ),
         htmltools::tags$span(class = "controle-texto", "dos municípios em"),
-        seletor_inline(ns("ano"), anos, selected = max(dados_ibisma()$anos))
+        seletor_inline(ns("ano"), anos, selected = max(dados_vidas()$anos))
       ),
       # Organizando mapa e ranking lado a lado no desktop
       bslib::layout_columns(
@@ -129,7 +129,7 @@ mod_onde_ui <- function(id) {
 #' Server do módulo Onde?
 #'
 #' @param id Identificador do módulo.
-#' @param dados Lista lida por dados_ibisma().
+#' @param dados Lista lida por dados_vidas().
 #' @param municipio Reativo compartilhado com o município selecionado.
 #' @param ano Reativo compartilhado com o ano selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.

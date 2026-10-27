@@ -221,7 +221,7 @@ body {
 /* ----------------------------------------------------------------- navbar */
 
 /* Barra de navegação azul escura, fixa no topo durante toda a rolagem */
-.navbar-ibisma {
+.navbar-vidas {
   position: sticky;
   top: 0;
   z-index: 1030;
@@ -233,7 +233,7 @@ body {
 }
 
 /* Distribuindo marca e menu na mesma linha */
-.navbar-ibisma .navbar-conteudo {
+.navbar-vidas .navbar-conteudo {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -277,7 +277,7 @@ body {
 }
 
 /* Estilizando os links das âncoras em branco */
-.navbar-ibisma .nav-link {
+.navbar-vidas .nav-link {
   font-size: var(--fonte-subtitulos-sobre-size);
   font-weight: 600;
   color: rgb(var(--cor-branco-rgb) / 0.88);
@@ -287,23 +287,23 @@ body {
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.navbar-ibisma .nav-link:hover {
+.navbar-vidas .nav-link:hover {
   color: var(--cor-branco);
   border-bottom-color: rgb(var(--cor-azul-claro-rgb) / 0.6);
 }
 
 /* Marcando a seção visível com o indicador inferior do painel */
-.navbar-ibisma .nav-link.active {
+.navbar-vidas .nav-link.active {
   color: var(--cor-branco);
   border-bottom-color: var(--cor-azul-claro);
 }
 
 /* Ajustando o botão do menu móvel sobre o fundo escuro */
-.navbar-ibisma .navbar-toggler {
+.navbar-vidas .navbar-toggler {
   border-color: rgb(var(--cor-branco-rgb) / 0.35);
 }
 
-.navbar-ibisma .navbar-toggler:focus {
+.navbar-vidas .navbar-toggler:focus {
   box-shadow: 0 0 0 3px rgb(var(--cor-azul-claro-rgb) / 0.4);
 }
 
@@ -811,7 +811,7 @@ input:focus-visible,
 }
 
 /* Estilizando o tooltip do mapa */
-.leaflet-tooltip.tooltip-ibisma {
+.leaflet-tooltip.tooltip-vidas {
   background: var(--cor-branco);
   border: none;
   border-radius: 12px;
@@ -821,7 +821,7 @@ input:focus-visible,
 }
 
 /* Escondendo a seta do tooltip para um visual mais limpo */
-.leaflet-tooltip.tooltip-ibisma::before {
+.leaflet-tooltip.tooltip-vidas::before {
   display: none;
 }
 
@@ -1562,7 +1562,7 @@ input:focus-visible,
 }
 
 /* Dando ao gráfico do índice toda a largura da grade */
-.evolucao-card--ibisma {
+.evolucao-card--vidas {
   grid-column: 1 / -1;
 }
 
@@ -1575,7 +1575,7 @@ input:focus-visible,
 }
 
 /* Dando mais destaque ao título do cartão do índice */
-.evolucao-card--ibisma .evolucao-card__titulo {
+.evolucao-card--vidas .evolucao-card__titulo {
   font-size: var(--fonte-muito-grande-size);
 }
 
@@ -1943,23 +1943,23 @@ input:focus-visible,
 }
 
 /* Deixando a seta da tooltip branca, igual ao fundo do cartão */
-.tooltip.tooltip-ibisma {
+.tooltip.tooltip-vidas {
   --bs-tooltip-bg: var(--cor-branco);
   pointer-events: none;
 }
 
 /* Animando a abertura e o fechamento das tooltips ancoradas */
-.tooltip.tooltip-ibisma:not(.tooltip-cursor) {
+.tooltip.tooltip-vidas:not(.tooltip-cursor) {
   transition: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Removendo a transparência padrão da tooltip */
-.tooltip.tooltip-ibisma.show {
+.tooltip.tooltip-vidas.show {
   opacity: 1;
 }
 
 /* Estilizando o cartão da tooltip no padrão do painel */
-.tooltip.tooltip-ibisma .tooltip-inner {
+.tooltip.tooltip-vidas .tooltip-inner {
   background-color: var(--cor-branco);
   color: var(--cor-azul-escuro);
   border: 1px solid var(--cor-borda);
@@ -1972,12 +1972,12 @@ input:focus-visible,
 }
 
 /* Alargando a tooltip que carrega a régua do índice e a explicação das pétalas */
-.tooltip.tooltip-ibisma--larga {
+.tooltip.tooltip-vidas--larga {
   --bs-tooltip-max-width: 26rem;
   max-width: 26rem;
 }
 
-.tooltip.tooltip-ibisma--larga .tooltip-inner {
+.tooltip.tooltip-vidas--larga .tooltip-inner {
   max-width: 26rem;
 }
 
@@ -2686,7 +2686,7 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   }
 
   /* Mantendo o indicador inferior colado ao texto no menu colapsado */
-  .navbar-ibisma .nav-link {
+  .navbar-vidas .nav-link {
     display: inline-block;
     width: auto;
     margin-left: 0;

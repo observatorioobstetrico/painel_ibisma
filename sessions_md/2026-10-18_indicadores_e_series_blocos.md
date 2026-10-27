@@ -1,6 +1,6 @@
 # Sessão 35 — Indicadores brutos dos blocos e séries históricas (18/10/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** levar as séries históricas dos dezesseis indicadores brutos que
   compõem os seis blocos para as bases do painel e para a interface, com
   gráficos de evolução próprios na seção Como?.
@@ -52,7 +52,7 @@ por bloco.
   medidas + os dezesseis indicadores.
 - A cobertura de cada indicador é impressa na geração (98,2% a 100%; as faltas
   ficam em IDHM e distância).
-- `base_exemplo_ibisma.csv` deixou de ser lida pelo script e pelos testes
+- `base_exemplo_vidas.csv` deixou de ser lida pelo script e pelos testes
   (candidata a sair do repositório).
 
 ## 4. Consultas e gráficos
@@ -88,7 +88,7 @@ por bloco.
   todos os cartões da linha começam e terminam no mesmo Y, mesmo com títulos de
   uma ou duas linhas.
 - O esqueleto reserva os cinco cartões do bloco padrão (Social).
-- Alturas finais dos gráficos (ajustadas nesta sessão): IBISMA **240 px**,
+- Alturas finais dos gráficos (ajustadas nesta sessão): VIDAS **240 px**,
   blocos **170 px** e indicadores **160 px**.
 
 ## 6. Testes (`tests/testthat/test-funcoes_globais.R`)
@@ -106,7 +106,7 @@ por bloco.
 
 ## 7. Bases do aplicativo
 
-- `inst/app/data/dados_ibisma.rds` reconstruído com dados reais: 55.700 linhas
+- `inst/app/data/dados_vidas.rds` reconstruído com dados reais: 55.700 linhas
   (5.570 municípios × 10 anos) e 23 colunas (7 medidas + 16 indicadores);
   tabelas anuais regeradas; malha inalterada.
 - Observações da base: o município padrão é Jutaí (AM); o IDHM é fixo no tempo
@@ -133,7 +133,7 @@ por bloco.
 
 - Reiniciar o app e conferir a seção nova com a base real.
 - Confirmar os padrões de `ESC_11` e `NASC_RACA` com o Bruno.
-- Decidir o destino de `base_exemplo_ibisma.csv` e das bases de entrada da
+- Decidir o destino de `base_exemplo_vidas.csv` e das bases de entrada da
   pipeline.
 - Se o mapa ou o ranking passarem a aceitar indicador, incluir os indicadores
   nas tabelas anuais (categorias e rankings por ano); hoje as séries bastam
@@ -143,13 +143,13 @@ por bloco.
 
 Depois dos primeiros testes com a base real, uma rodada de ajustes finos:
 
-- **Eixos**: todos os gráficos de evolução (IBISMA, blocos e indicadores) usam
+- **Eixos**: todos os gráficos de evolução (VIDAS, blocos e indicadores) usam
   cinco marcações equiespaçadas, com a faixa adaptativa (`limites_eixo`) no
   lugar do piso/teto fixos de 25 em 25; os passos redondos das medidas são
   sempre inteiros e o topo não passa dos 100 do percentil. Os esqueletos
   desenham as mesmas cinco marcações.
 - **Identificações das séries**: o componente `evolucao-identificacao` se
-  repete sob o título "Blocos do IBISMA" e sob o seletor de blocos dos
+  repete sob o título "Blocos do VIDAS" e sob o seletor de blocos dos
   indicadores; na seção dos indicadores a amostra de traço e bolinha usa a cor
   do bloco escolhido (`--cor-serie`), e não o azul escuro padrão.
 - **Seletor de blocos**: virou botões soltos de largura variável, com mais
@@ -159,7 +159,7 @@ Depois dos primeiros testes com a base real, uma rodada de ajustes finos:
   bloco", com a descrição nova.
 - **Nome do bloco**: "Planejamento Reprodutivo" virou "Planejamento
   reprodutivo" em todo o painel (o dicionário `MEDIDAS` é a fonte única).
-- **Perfil do município**: o bloco do índice ("IBISMA em {ano}", valor, selo e
+- **Perfil do município**: o bloco do índice ("VIDAS em {ano}", valor, selo e
   frase) subiu para logo depois das métricas territoriais, acima das pétalas; a
   base do palco passou a mostrar **três rankings** — macrorregião de saúde, UF
   e Brasil, nessa ordem. As tabelas anuais ganharam `pos_macro` e `total_macro`

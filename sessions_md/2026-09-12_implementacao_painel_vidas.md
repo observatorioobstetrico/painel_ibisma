@@ -1,8 +1,8 @@
-# Sessão — Implementação do painel IBISMA
+# Sessão — Implementação do painel VIDAS
 
 - **Data:** 12/09/2026
-- **Pacote:** `painel_ibisma`
-- **Objetivo:** construir a primeira versão do painel do IBISMA — Índice Brasileiro de
+- **Pacote:** `painel_vidas`
+- **Objetivo:** construir a primeira versão do painel do VIDAS — Índice Brasileiro de
   Insegurança em Saúde Materna — em R/Shiny + golem + bslib, de forma modular,
   responsiva e validada com smoke tests visuais/headless.
 
@@ -29,8 +29,8 @@ O projeto continha apenas o esqueleto golem:
 ```
 R/            app_config.R, app_server.R, app_ui.R, run_app.R
 inst/app/www/ global/custom.css (só variáveis de fonte), funcoes_javascript.js (vazio), logos/
-data/         df_ibisma.rda
-data-raw/     cria_rda.R, databases/base_exemplo_ibisma.csv, tabela_aux_municipios.csv
+data/         df_vidas.rda
+data-raw/     cria_rda.R, databases/base_exemplo_vidas.csv, tabela_aux_municipios.csv
 dev/          01_start.R, 02_dev.R, 03_deploy.R, run_dev.R
 ```
 
@@ -42,7 +42,7 @@ Descobertas que exigiram cuidado:
   explicitamente apenas `www/global/custom.css` e `www/global/funcoes_javascript.js`.
   Os arquivos antigos não foram apagados.
 
-### 1.3 Dados (`data/df_ibisma.rda`)
+### 1.3 Dados (`data/df_vidas.rda`)
 
 | Característica | Valor |
 | --- | --- |
@@ -77,7 +77,7 @@ R 4.4.3 (Windows). Pacotes relevantes disponíveis: `shiny` 1.13, `golem` 0.5.1,
 - **IMAPI** — perfil do município com nome em destaque, métricas de contexto,
   flor de domínios e rankings Brasil/estadual. Inspirou o Perfil.
 
-Nenhum painel anterior do IBISMA foi consultado — a construção partiu das
+Nenhum painel anterior do VIDAS foi consultado — a construção partiu das
 instruções e das referências acima, por decisão explícita do usuário.
 
 ---
@@ -90,9 +90,9 @@ instruções e das referências acima, por decisão explícita do usuário.
    mobile empilham.
 2. **Navbar com 2 âncoras** (`Panorama`, `Perfil dos municípios`), scroll suave,
    item ativo via JS (scrollspy) e menu colapsável no mobile.
-3. **Cores:** IBISMA em 5 tons de roxo; cada bloco com cor própria; "Sem dados"
+3. **Cores:** VIDAS em 5 tons de roxo; cada bloco com cor própria; "Sem dados"
    em cinza. Medidas de bloco usam rampa própria no mapa (clareia → escurece a
-   partir da cor do bloco); o IBISMA usa a rampa roxa.
+   partir da cor do bloco); o VIDAS usa a rampa roxa.
 4. **Flor do perfil:** pétalas proporcionais (0–100) com os nomes reais dos
    blocos e pontos da **mediana Brasil** como referência (em vez de réplica
    decorativa sem escala).
@@ -135,18 +135,18 @@ R/
 ├── app_ui.R                  shell: tema bslib, navbar por âncoras, seções, recursos com cache-busting
 ├── app_server.R              cache da base, estado compartilhado do município, waiter, módulos
 ├── run_app.R                 (existente)
-├── fct_config.R              BLOCOS, MEDIDAS, PALETA_IBISMA, CATEGORIAS, NIVEIS_ANALISE, textos
+├── fct_config.R              BLOCOS, MEDIDAS, PALETA_VIDAS, CATEGORIAS, NIVEIS_ANALISE, textos
 ├── fct_cores.R               cor_medida, paleta_categorias, cor_categoria, paleta_mapa, contraste
 ├── fct_dados.R               preparar_dados, tabela_ano, valores_ano, resumo_municipio, séries,
 │                             comparações, opções de seletores, formatadores pt-BR
 ├── fct_mapa.R                malha em cache, dados_mapa, malha_do_ano, tooltip, leaflet base,
 │                             desenho de municípios/UF e mensagem customizada de atualização
 ├── fct_graficos.R            estilo e tooltips ECharts, flor polar, evolução, diferenças, gráfico vazio
-├── utils_ui.R                tema_ibisma, navbar, título de seção, controle em frase, selos,
+├── utils_ui.R                tema_vidas, navbar, título de seção, controle em frase, selos,
 │                             legenda, métrica, estado vazio, rodapé, atualizar_seletor
 ├── mod_panorama.R            controles, mapa, legenda, ranking reactable e sincronizações
 ├── mod_perfil_municipio.R    hero, flor, índice, evolução, comparação e estados sem dado
-└── painel_ibisma-package.R doc do pacote (import shiny, sf)
+└── painel_vidas-package.R doc do pacote (import shiny, sf)
 
 inst/app/www/global/
 ├── custom.css               identidade visual completa (~25 KB)
@@ -166,13 +166,13 @@ dev/headless_smoke.R         smoke test visual/headless parametrizável
   usuário** (o arquivo de dados não traz dicionário).
 - Cores dos blocos: Social `#FAC80F`, Planejamento `#41BE3C`, Pré-natal
   `#32A0FF`, Parto `#E4572E`, Sistema `#1E5AA0`, Clima `#00A6A6`.
-- `PALETA_IBISMA` (5 classes): `#EFE6F7`, `#C9A8E4`, `#9F6FD0`, `#7239A8`, `#4B1D73`.
+- `PALETA_VIDAS` (5 classes): `#EFE6F7`, `#C9A8E4`, `#9F6FD0`, `#7239A8`, `#4B1D73`.
 - `PROBS_CORTES = c(.2, .4, .6, .8)` — categorias por quintis da distribuição de
   cada ano e medida.
 
 ### 4.2 Dados (`fct_dados.R`)
 
-- `dados_ibisma()` prepara a base **uma vez por processo** (cache em ambiente).
+- `dados_vidas()` prepara a base **uma vez por processo** (cache em ambiente).
 - Formato longo com as 7 medidas, valores em 0–100.
 - `tabela_ano()` (com cache por ano) calcula, para cada medida: cortes, categoria,
   rank nacional e rank na UF (posição 1 = mais vulnerável).
@@ -206,7 +206,7 @@ dev/headless_smoke.R         smoke test visual/headless parametrizável
 
 ### 4.5 UI/UX
 
-- Controles em frase natural com `slimSelectInput` sublinhado ("Mostrar IBISMA
+- Controles em frase natural com `slimSelectInput` sublinhado ("Mostrar VIDAS
   dos municípios em 2024"; "Ver Jutaí (AM) em 2024 e comparar com Nenhum").
 - Blocos com fundo claro, sem "cara de dashboard"; muito espaço em branco.
 - Ranking com busca sem acentos (`normalize('NFD')`), paginação, seleção única e
@@ -285,7 +285,7 @@ e extensões: `--full` (página inteira), `--scroll`, `--mobile`, `--espera`,
 Fluxos verificados por headless (chromote):
 
 - carregamento inicial (mapa, ranking, flor, evolução sem erros);
-- hover no mapa com tooltip ("Primavera do Leste (MT) — IBISMA 44,0 — Médio");
+- hover no mapa com tooltip ("Primavera do Leste (MT) — VIDAS 44,0 — Médio");
 - clique no mapa seleciona o município e atualiza o perfil;
 - clique em linha do ranking atualiza o perfil e destaca no mapa;
 - troca de medida (mapa recolorido na rampa do bloco e legenda atualizada);
@@ -349,7 +349,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 6. **Descrições de acessibilidade** existem no código, mas o módulo de
    acessibilidade do ECharts não está disponível na versão atual do pacote.
 7. **Base de exemplo:** o rodapé deixa claro que os dados são um exemplo de
-   desenvolvimento e que o IBISMA é um índice relativo (percentil).
+   desenvolvimento e que o VIDAS é um índice relativo (percentil).
 
 ---
 
@@ -365,7 +365,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 2 — Correções e refinamentos (12/09/2026)
 
-- **Pacote:** `painel_ibisma` (esta base seguiu adiante; uma versão anterior
+- **Pacote:** `painel_vidas` (esta base seguiu adiante; uma versão anterior
   foi consultada apenas como referência visual dos componentes corrigidos).
 - **Objetivo:** corrigir problemas específicos e aproximar navbar, mapa e
   gráfico de pétalas do que já havia sido melhor resolvido na versão anterior,
@@ -389,7 +389,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   `.bslib-page-fill { height:100% }`, o que limitava o `position: sticky` à
   viewport. O CSS libera a altura natural do documento (`height: auto` +
   `min-height: 100vh`).
-- Visual: fundo `#0A1E3C`, IBISMA + descrição do índice (visível a partir de
+- Visual: fundo `#0A1E3C`, VIDAS + descrição do índice (visível a partir de
   `lg`), itens brancos. O indicador inferior do painel foi mantido (sublinhado
   azul claro) e, no menu colapsado, acompanha a largura do texto.
 
@@ -445,7 +445,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 3 — UI/UX, cores e hierarquia (12/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** corrigir cinco problemas de UI/UX e comportamento, centralizar
   a lógica de cores por dimensão e validar tudo com smoke tests headless.
 
@@ -473,7 +473,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - `cor_categoria(categoria, medida = "indice_final")` e
   `montar_selos(categorias, medida)` agora aceitam a medida.
 - Tooltip do mapa (`tooltip_municipio`) recebe a paleta da medida: a chip da
-  categoria deixa de ser sempre roxa e passa a usar a rampa do IBISMA ou do
+  categoria deixa de ser sempre roxa e passa a usar a rampa do VIDAS ou do
   bloco exibido, com cor de texto por contraste.
 - Tooltip das pétalas ganhou marcador ao lado do título e selo de categoria na
   rampa do bloco (`--cor-medida` + `cor_categoria(categoria, medida)`).
@@ -481,14 +481,14 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   linha; as cores dinâmicas eram descartadas. As tooltips das pétalas passaram
   a ser inicializadas com `sanitize: false` (o conteúdo é gerado pelo servidor).
 - Ranking, legenda do mapa, evolução temporal e pétalas consomem as mesmas
-  funções; o tema do reactable deriva os tons de destaque de `COR_IBISMA` com
+  funções; o tema do reactable deriva os tons de destaque de `COR_VIDAS` com
   `misturar_cores()` em vez de hexadecimais soltos.
 - O campo de busca dos `slimSelectInput` passou a exibir "Buscar..." no lugar
   do "Search" padrão do plugin.
 
 ## 3. Rebalanceamento das cinco categorias
 
-- IBISMA: `#D5C2E8`, `#B592D6`, `#915EC4`, `#6B35A3`, `#4B1D73`.
+- VIDAS: `#D5C2E8`, `#B592D6`, `#915EC4`, `#6B35A3`, `#4B1D73`.
 - Blocos: rampa derivada com pesos 0,62 e 0,30 para o branco e 0,32 e 0,62 para
   o azul escuro (antes 0,88/0,55 no branco), mantendo a cor do bloco na
   categoria central. "Muito baixo" deixou de se confundir com o fundo do mapa e
@@ -508,7 +508,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   mas o resultado desperdiçava a largura. O perfil foi refeito como um palco
   único inspirado no IMAPI: nome do município e métricas territoriais no topo,
   leque de pétalas grande e centralizado e, na base, um placar com o ranking
-  Brasil à esquerda, o valor do IBISMA nomeado ao centro ("IBISMA em \<ano\>",
+  Brasil à esquerda, o valor do VIDAS nomeado ao centro ("VIDAS em \<ano\>",
   "de 100", selo e frase de percentil) e o ranking estadual à direita.
 - No mobile o placar empilha com o valor primeiro e os rankings abaixo.
 - O leque ganhou `viewBox` recortado (`45 60 410 236`) e limite de altura
@@ -520,7 +520,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   desenho, explicados pelo texto).
 - O ranking estadual passou a ser rotulado "Ranking na UF (Amazonas)".
 - Todos os valores exibidos no painel usam uma casa decimal, incluindo o
-  número dentro de cada pétala e o valor em destaque do IBISMA.
+  número dentro de cada pétala e o valor em destaque do VIDAS.
 - A frase de percentil passou a usar uma casa decimal e teto de 99,9% (antes
   99%), para não subestimar o município mais vulnerável do ranking.
 - Ordem da seção: identificação (controles + palco) → evolução → comparação.
@@ -553,7 +553,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 4 — Evolução temporal e comparação lado a lado (13/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** corrigir dois problemas do gráfico de evolução temporal
   (formatação do eixo X e sete séries simultâneas) e reformular completamente a
   comparação entre municípios, que passou a acontecer nos próprios elementos do
@@ -576,8 +576,8 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - `series_municipio()` (em `fct_dados.R`) monta um data frame com `ano` e uma
   coluna por medida, preenchendo anos ausentes com `NA`; `series_tem_valor()`
   decide quando há algo para desenhar.
-- O gráfico desenha **IBISMA + seis blocos** de uma vez, com os nomes e as cores
-  reais de `MEDIDAS`; o IBISMA é a linha mais espessa e todas as séries mostram
+- O gráfico desenha **VIDAS + seis blocos** de uma vez, com os nomes e as cores
+  reais de `MEDIDAS`; o VIDAS é a linha mais espessa e todas as séries mostram
   o ponto de cada ano como círculo (`symbolSize = 6`, borda branca).
 - O seletor "Evolução do" foi removido — a leitura é sempre conjunta.
 - As cores continuam representando **dimensões**, nunca municípios.
@@ -675,7 +675,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 5 — Métricas territoriais, tooltips de corte e placar (13/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** refinar o cabeçalho territorial do perfil (ordem, cortes e
   tooltips condicionais), estabilizar o placar e igualar as colunas do modo
   comparação.
@@ -718,7 +718,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   `font-size` na medida padrão do painel; as regras manuais de seta por
   posição foram removidas. O foco por teclado ganhou contorno visível.
 
-## 3. Placar do IBISMA
+## 3. Placar do VIDAS
 
 - As laterais do placar usam `minmax(7.5rem, 1fr)`, reservando o mesmo espaço
   para os rankings nacional e estadual mesmo quando posições e totais têm
@@ -749,7 +749,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 6 — Pétalas com disco fixo, escala alinhada à guia (13/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** redesenhar o gráfico de pétalas (disco de valor no topo, sem
   ticks e sem mediana, escala alinhada à guia), trocar o texto do percentil e
   refinar espaçamentos do perfil.
@@ -806,7 +806,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 7 — Seções e módulos "Onde?" e "Como?" (13/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** renomear as duas seções do painel e seus módulos para
   "Onde?" (antigo Panorama/Visão geral) e "Como?" (antigo Perfil dos
   municípios), mantendo a coerência entre rótulos, âncoras e código.
@@ -845,7 +845,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 8 — Esqueletos de carregamento (13/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** adicionar esqueletos de carregamento a todos os outputs,
   preservando o espaço do conteúdo, com o visual do painel hospitalar e sem
   mudanças bruscas de layout.
@@ -946,7 +946,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 9 — Rodapé institucional com logos negativos (13/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** refazer o rodapé de realizadores e financiadores, que estava
   com "cara de adesivos" (cada logo dentro de uma caixa branca), aproximando-o
   da referência institucional: logos negativos direto no fundo azul, títulos
@@ -973,7 +973,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   `rodape-base` cobre toda a largura útil do `painel-container` (a mesma das
   logos), com o texto limitado a `70rem` dentro dele.
 - A primeira frase da nota passou a "Este painel está em desenvolvimento.",
-  mantendo o aviso de que o IBISMA é um índice relativo.
+  mantendo o aviso de que o VIDAS é um índice relativo.
 - Os `img` do rodapé ganharam `loading="lazy"` e `decoding="async"`.
 
 ## 3. Otimização dos arquivos de logo
@@ -1002,7 +1002,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 10 — Seletores refinados e fendas da malha do mapa (13/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** refinar o comportamento e o visual dos seletores slimSelect e
   eliminar os espaços em branco do mapa, causados por fendas internas da malha
   municipal.
@@ -1110,23 +1110,23 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 11 — Evolução temporal: hierarquia, eixo Y e nitidez (14/09/2026)
 
-- **Pacote:** `painel_ibisma`.
-- **Objetivo:** fazer o IBISMA se destacar no gráfico de evolução temporal,
+- **Pacote:** `painel_vidas`.
+- **Objetivo:** fazer o VIDAS se destacar no gráfico de evolução temporal,
   adaptar o eixo Y à faixa dos dados (compartilhado na comparação) e corrigir
   o borrão dos gráficos ECharts em telas com escala fracionária ou sob zoom.
 
-## 1. Hierarquia visual do IBISMA
+## 1. Hierarquia visual do VIDAS
 
-- O IBISMA passou a ser desenhado **por cima** dos blocos (`z = 10`) — antes
+- O VIDAS passou a ser desenhado **por cima** dos blocos (`z = 10`) — antes
   era a primeira série e os blocos ficavam sobre ele —, com linha de 3,5 px e
   bolinha de 8. Os blocos ficaram com 1,8 px, símbolo 5 e opacidade 0,7.
 - Ao passar o mouse, a série focada volta à opacidade 1 (`emphasis` com
   `lineStyle`/`itemStyle`), preservando o `focus = "series"` que apaga as
   demais linhas.
-- `grafico_legenda()` alinhou as larguras ao gráfico (3,5 no IBISMA, 1,5 nos
+- `grafico_legenda()` alinhou as larguras ao gráfico (3,5 no VIDAS, 1,5 nos
   blocos).
 
-## 2. Bolinha apenas no IBISMA
+## 2. Bolinha apenas no VIDAS
 
 - A série do índice mantém o ponto de cada ano sempre visível; nos blocos o
   ponto só aparece no hover (`showSymbol` condicional em `grafico_evolucao()`),
@@ -1174,7 +1174,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   via `Emulation.setDeviceMetricsOverride` para checagens de nitidez.
 - Evidências: `dev/smoke/evolucao_eixo/` (hierarquia e eixos iguais),
   `dev/smoke/dpr/` (SVG nítido em 1,25 e 1,5) e `dev/smoke/simbolos/`
-  (bolinha apenas no IBISMA), todas ignoradas pelo git.
+  (bolinha apenas no VIDAS), todas ignoradas pelo git.
 
 ## 7. Testes
 
@@ -1199,21 +1199,21 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 12 — Evolução temporal em pequenos múltiplos (14/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** reformular a visualização "Evolução ao longo do tempo" — que
-  concentrava IBISMA e seis blocos em um único gráfico por município — em uma
+  concentrava VIDAS e seis blocos em um único gráfico por município — em uma
   grade com um gráfico para o índice e seis para os blocos, com identificação
   direta das localidades e comparação dentro de cada gráfico.
 
 ## 1. Estrutura
 
-- A seção passou a ter um cartão de largura total para o **IBISMA** e o título
-  intermediário **"Blocos do IBISMA"** (mantendo a linguagem de "blocos" usada
+- A seção passou a ter um cartão de largura total para o **VIDAS** e o título
+  intermediário **"Blocos do VIDAS"** (mantendo a linguagem de "blocos" usada
   pelas pétalas e pelos seletores) sobre seis cartões em pequenos múltiplos.
 - A grade usa CSS Grid: 3 colunas em telas largas (3 × 2), 2 colunas até
   1100 px (alinhado ao breakpoint da comparação de palcos) e 1 coluna até
-  768 px. O cartão do IBISMA ocupa a largura toda em qualquer largura.
-- Alturas fixas: 270 px para o IBISMA e 160 px para os blocos, evitando que os
+  768 px. O cartão do VIDAS ocupa a largura toda em qualquer largura.
+- Alturas fixas: 270 px para o VIDAS e 160 px para os blocos, evitando que os
   cartões fiquem estreitos demais sem depender de recálculo de tamanho.
 - `grade_evolucao_ui()` (em `fct_graficos.R`) monta os sete cartões; o servidor
   registra os sete outputs em um laço sobre `MEDIDAS`, sem repetição de código.
@@ -1235,7 +1235,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   ou um bloco) com uma ou duas séries: principal (linha cheia) e comparada
   (linha **pontilhada**, mesma cor e opacidade 0,55, desenhada abaixo).
 - Os pisos do eixo Y passaram a ser calculados por grupo com
-  `piso_eixo_y(series, medidas)`: o IBISMA usa o piso da própria série e os
+  `piso_eixo_y(series, medidas)`: o VIDAS usa o piso da própria série e os
   seis blocos **compartilham** o piso da menor série de bloco entre os dois
   municípios, para os cartões serem comparáveis entre si. O topo segue em 100.
 - A legenda foi eliminada: cada série leva o nome da localidade no fim da
@@ -1255,9 +1255,9 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   gráfico; a comparação mantém o traço pontilhado mais claro mesmo sob o
   cursor. O retorno visual do hover fica com o realce padrão do ECharts e com
   a tooltip.
-- Hierarquia dos títulos dentro dos cartões: "IBISMA" em
+- Hierarquia dos títulos dentro dos cartões: "VIDAS" em
   `--fonte-muito-grande-size` e os seis blocos em `--fonte-grande-size`
-  (`.evolucao-card--ibisma .evolucao-card__titulo`).
+  (`.evolucao-card--vidas .evolucao-card__titulo`).
 
 ## 3. Tooltip
 
@@ -1277,9 +1277,9 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - `mod_como.R` perdeu a dupla de colunas da evolução e a legenda inferior; a
   seção virou um único slot (`uiOutput(ns("evolucoes"))`) que mostra a grade ou
   um estado vazio quando não há série temporal.
-- O piso compartilhado `piso_y` foi substituído por `piso_ibisma` e
+- O piso compartilhado `piso_y` foi substituído por `piso_vidas` e
   `piso_blocos`; a comparação é desenhada apenas quando o comparado tem série.
-- O handler `ibisma_comparacao` deixou de tratar a antiga coluna de evolução e
+- O handler `vidas_comparacao` deixou de tratar a antiga coluna de evolução e
   de disparar `resize` (os gráficos da grade não mudam de largura com a
   comparação); continua aplicando `dupla--comparando` nos palcos.
 
@@ -1307,7 +1307,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 13 — Ranking por medida e identificação da evolução (14/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** adaptar o ranking à medida exibida (cores, buscas, seleção e
   cabeçalho) e identificar os municípios e o período no card de evolução,
   com esqueleto e bolinhas de dimensão nos títulos.
@@ -1317,10 +1317,10 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - `tema_reactable(medida)` deriva hover, linha selecionada, barra lateral e
   botões de página da cor da medida (`cor_medida()`); o botão ativo usa
   `cor_texto_sobre()` para contraste (ex.: amarelo do Social pede texto
-  azul escuro). Para o IBISMA, os valores são idênticos aos anteriores.
+  azul escuro). Para o VIDAS, os valores são idênticos aos anteriores.
 - `nome_medida(medida, prefixo_bloco = TRUE)` prefixa os blocos: o resumo do
   ranking virou "5.570 municípios do Brasil em 2024 · Bloco Planejamento
-  Reprodutivo", mantendo "· IBISMA" para o índice.
+  Reprodutivo", mantendo "· VIDAS" para o índice.
 - **Achado:** como a coluna Pos. é `sticky`, as linhas usam a classe
   `rt-tr-highlight-sticky` e o `highlightColor` do tema nunca casava (o
   hover ficava no cinza padrão). O tema agora expõe `--cor-hover-ranking` e
@@ -1398,7 +1398,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   testthat.)
 - Smoke headless (evidências nos temporários, fora do git): resumo com
   "Bloco", hover/seleção/página nas cores do bloco (bloco2 verde, Social
-  amarelo, IBISMA roxo inalterado), manter Jutaí (rank 22/página 2 →
+  amarelo, VIDAS roxo inalterado), manter Jutaí (rank 22/página 2 →
   rank 6/página 1 no AM), reset para Campos Novos Paulista em SP,
   clique na linha sincronizando o perfil, buscas sem acento/sinais e
   geometria de esqueletos/desktop/mobile.
@@ -1413,7 +1413,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 14 — Teto adaptativo do eixo Y, rótulos de ano no mobile e placar (14/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** tornar o teto do eixo Y adaptativo (espelhando o piso), dar
   respiro aos anos do eixo X no mobile com rótulos inclinados e colocar os
   rankings do placar lado a lado em telas pequenas.
@@ -1432,7 +1432,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 - `mod_como.R`: `piso_do_grupo()` virou `limites_do_grupo()` e devolve
   `list(min, max)`. Na comparação a faixa é **aberta ao máximo** (menor piso e
   maior teto entre principal e comparado) para nenhuma das séries ser cortada.
-  O IBISMA mantém escala própria e os seis blocos seguem compartilhando uma
+  O VIDAS mantém escala própria e os seis blocos seguem compartilhando uma
   única escala, agora com piso e teto iguais.
 - Efeito nos testes: Dois (RO) passou a ter eixo 80–90 no índice (antes 80–100)
   e, na comparação com Quatro (SP), 10–90 no índice e 20–100 nos blocos.
@@ -1484,7 +1484,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 
 # Sessão 15 — Otimização da inicialização (15/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** tirar do app as contas determinísticas (preparação da base,
   categorias, rankings e séries), consumir arquivos prontos em `inst/app/data/`,
   aliviar o payload da primeira carga do mapa e consertar a junção da malha.
@@ -1506,12 +1506,12 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   `cortes_categorias`, `categorizar`, `calcular_tabela_ano`,
   `calcular_series_municipio`) que saíram de `R/fct_dados.R` e agora servem
   apenas à geração dos arquivos e aos testes.
-- `data-raw/prepara_painel.R` (novo): gera `dados_ibisma.rds` (cadastro, anos e
+- `data-raw/prepara_painel.R` (novo): gera `dados_vidas.rds` (cadastro, anos e
   55.700 linhas de séries) e `tabela_ano_2015.rds` … `tabela_ano_2024.rds`.
-- `R/fct_dados.R`: passou a só ler; `dados_ibisma()` guarda o arquivo na memória
+- `R/fct_dados.R`: passou a só ler; `dados_vidas()` guarda o arquivo na memória
   do processo, `tabela_ano()` lê um arquivo por ano (com erro claro se faltar) e
   `series_municipio()`, `opcoes_*()`, `nome_uf()` e `anos_disponiveis()` usam os
-  campos prontos, sem tocar em `df_ibisma`.
+  campos prontos, sem tocar em `df_vidas`.
 - `tidyr` saiu de Imports (foi para Suggests), pois só o data-raw usa.
 
 ## 3. Junção da malha
@@ -1522,7 +1522,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
 ## 4. Fase 2 — payload do mapa
 
 - `desenhar_municipios()` não envia mais os tooltips na carga inicial; a mesma
-  mensagem `ibisma_mapa_atualiza` (disparada quando o mapa fica pronto) liga os
+  mensagem `vidas_mapa_atualiza` (disparada quando o mapa fica pronto) liga os
   tooltips com `bindTooltip` quando a camada ainda não tem um.
 - `data-raw/prepara_malha.R` passou a arredondar as coordenadas para 5 casas
   (cerca de 1 m, invisível no zoom máximo 10) e as malhas existentes foram
@@ -1544,7 +1544,7 @@ Rscript dev/headless_smoke.R --mobile --width=390 --height=844 --shot=mobile.png
   (`RESULTADO: 5570|5598`), sem erros de JavaScript; evidência em
   `dev/smoke/otimizacao.png`.
 - `dev/bench_inicializacao.R` (novo) mede o roteiro de abertura a cada execução.
-  Depois: `dados_ibisma()` 0,04 s, tabela anual 0,06 s, `malha_do_ano` 0,07 s,
+  Depois: `dados_vidas()` 0,04 s, tabela anual 0,06 s, `malha_do_ano` 0,07 s,
   `series_municipio`/`opcoes_*`/`nome_uf` ~0 s.
 
 ## 6. Como regenerar os dados
@@ -1561,7 +1561,7 @@ Rscript data-raw/cria_rda.R   # base bruta e arquivos prontos (ver Sessão 16)
 
 # Sessão 16 — Roteiro de dados unificado e legível no cria_rda.R (15/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** concentrar todo o roteiro de geração em um único arquivo
   linear, em R comum, que possa ser lido e rodado passo a passo por uma
   pessoa — sem funções empacotadas, atalhos nem carregamento do pacote.
@@ -1576,11 +1576,11 @@ data-raw/
 
 - `cria_rda.R` está em ordem de execução, com uma conferência impressa a cada
   etapa (cabeçalhos, contagens, duplicatas, amostras e faixas de valores):
-  1. base bruta (`data/df_ibisma.rda`);
+  1. base bruta (`data/df_vidas.rda`);
   2. constantes do índice (`medidas`, `categorias`, `cortes_percentis`);
   3. base longa (uma linha por município, ano e medida);
   4. tabelas por ano (`inst/app/data/tabela_ano_*.rds`);
-  5. cadastro, anos e séries (`inst/app/data/dados_ibisma.rds`);
+  5. cadastro, anos e séries (`inst/app/data/dados_vidas.rds`);
   6. malha geográfica, sob a chave `gerar_malha <- FALSE` (baixa do geobr e
      demora, então só roda quando a geografia muda).
 - O script não depende do pacote carregado (sem `pkgload::load_all()`) e pode
@@ -1593,7 +1593,7 @@ data-raw/
 - Como o roteiro virou um script linear, os testes deixaram de carregá-lo e
   passaram a conferir os **arquivos gerados** contra a base bruta e a
   configuração do app:
-  - as séries batem valor a valor com `df_ibisma` (100×), inclusive o ano
+  - as séries batem valor a valor com `df_vidas` (100×), inclusive o ano
     faltante de Borá;
   - as tabelas usam as medidas e as categorias de `R/fct_config.R`;
   - as categorias conferem com os quintis do ano e os rankings nacional/UF
@@ -1622,13 +1622,13 @@ data-raw/
 - Smoke headless: mapa com as 5.570 tooltips ligadas após a carga, sem erros
   de JavaScript.
 
-## 5. Remoção do df_ibisma.rda
+## 5. Remoção do df_vidas.rda
 
 - O app não usava mais o dado de pacote e o roteiro nunca lia o `.rda` (só
   escrevia): saíram o `usethis::use_data()` do `cria_rda.R`, o arquivo
-  `data/df_ibisma.rda` e o `LazyData: true` do DESCRIPTION.
-- Os testes que usavam `df_ibisma` como referência passaram a ler direto o CSV
-  `data-raw/databases/base_exemplo_ibisma.csv` (com `skip_if_not` para o
+  `data/df_vidas.rda` e o `LazyData: true` do DESCRIPTION.
+- Os testes que usavam `df_vidas` como referência passaram a ler direto o CSV
+  `data-raw/databases/base_exemplo_vidas.csv` (com `skip_if_not` para o
   `R CMD check`, que ignora `data-raw`).
 - A única cópia da base bruta passa a ser o CSV em `data-raw/databases/`.
 
@@ -1641,7 +1641,7 @@ data-raw/
 
 # Sessão 17 — Refatoração para leitura: definições, componentes e paletas (15/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** facilitar a leitura do código do painel — ao abrir um módulo, saber de onde vem cada função auxiliar e
   onde ela é usada —, reduzindo os auxiliares com funções de um só dono.
 
@@ -1667,7 +1667,7 @@ data-raw/
 ## 3. Cada componente no seu dono
 
 - `NIVEIS_ANALISE` foi para o `mod_onde.R` e o `TEXTO_ESCALA` virou o próprio texto do cabeçalho da seção, sem variável.
-- `tema_ibisma()`, `navbar_ibisma()` e `rodape_ibisma()` saíram do `utils_ui` para o `app_ui.R`, junto de seus textos;
+- `tema_vidas()`, `navbar_vidas()` e `rodape_vidas()` saíram do `utils_ui` para o `app_ui.R`, junto de seus textos;
   `TITULO_PAINEL` e `SUBTITULO_PAINEL` deixaram de existir como variáveis (texto direto no título, na meta e na navbar).
 - O `utils_ui.R` ficou com os componentes das seções: `titulo_secao()`, `seletor_inline()`, `badge_categoria()`,
   `badge_categoria_html()` (ex-`montar_selos()`) e `estado_vazio()`.
@@ -1689,7 +1689,7 @@ data-raw/
 
 - As rampas das 7 medidas passaram a viver numa lista única, `PALETAS`, com os 5 tons nomeados pelas `CATEGORIAS`; a cor
   de identificação fica no tom central dos blocos e no tom mais alto do índice.
-- A cor de identificação passou a ser derivada da rampa (`MEDIDAS$cor`); a `PALETA_IBISMA` foi absorvida por
+- A cor de identificação passou a ser derivada da rampa (`MEDIDAS$cor`); a `PALETA_VIDAS` foi absorvida por
   `PALETAS$indice_final`, e a `paleta_bloco()` e a `paleta_medida()` deixaram de existir.
 - Os tons foram conferidos um a um contra a geração anterior: idênticos, sem mudança visual.
 - A `cor_categoria()` concentrou a regra "categoria → tom, ausente → cinza": o `dados_mapa()` e o `tooltip_municipio()`
@@ -1718,7 +1718,7 @@ data-raw/
 
 # Sessão 18 — Refatoração do fct_dados (15/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** continuar a refatoração para leitura aplicada na Sessão 17, agora focada no
   `fct_dados`: explicar o papel de cada auxiliar, localizar seus usos e mover para cada dono o
   que tem um único consumidor.
@@ -1799,7 +1799,7 @@ data-raw/
 
 # Sessão 19 — `constantes.R` só com constantes (15/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** fechar a separação de responsabilidades do arquivo de configuração:
   ele deixa de ter funções auxiliares e passa a ser um repositório puro de constantes,
   com o uso de cada valor documentado no próprio comentário.
@@ -1848,7 +1848,7 @@ data-raw/
 
 # Sessão 20 — Simplificação das constantes (15/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** deixar o `constantes.R` com o mínimo necessário — só os valores que têm
   mais de um usuário — e corrigir a duplicação do nível de análise que restou da sessão
   anterior.
@@ -1902,7 +1902,7 @@ data-raw/
 
 # Sessão 21 — Renomeação dos auxiliares e paleta de cores no CSS (16/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** alinhar os arquivos auxiliares à convenção `fct_*` do projeto e
   centralizar as cores do painel em variáveis no `custom.css`, sem mudança
   visual.
@@ -1963,7 +1963,7 @@ data-raw/
 
 # Sessão 22 — Otimização da inicialização do mapa (16/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** implementar as alternativas A + D + E do diagnóstico da
   inicialização do mapa: pré-serializar a geometria no ETL, enxugar a mensagem
   de dados e arredondar as coordenadas para 4 casas.
@@ -1988,7 +1988,7 @@ sessão, repetidas para cada usuário.
   camadas (5.570 municípios).
 - `carregar_desenho_municipios()` lê o arquivo uma vez por processo (0,03 s).
 - `enviar_desenho_municipios()` manda a geometria como **texto já pronto** na
-  mensagem `ibisma_mapa_desenha`; o JavaScript faz `JSON.parse` e cria as
+  mensagem `vidas_mapa_desenha`; o JavaScript faz `JSON.parse` e cria as
   camadas com `window.LeafletWidget.methods.addPolygons.call(mapa, ...)`, o
   mesmo caminho de dispatch do widget.
 - A serialização da mensagem inicial caiu para 0,01–0,04 s (3,54 MB).
@@ -2019,7 +2019,7 @@ sessão, repetidas para cada usuário.
 - `dev/bench_inicializacao.R` foi ajustado para medir o desenho pronto, os
   dados compactos e a mensagem.
 - Smoke headless: mapa com 5.570 camadas e 5.570 tooltips, hover real
-  ("Novo Santo Antônio (MT) — IBISMA 83,6 — Muito alto"), clique destacando o
+  ("Novo Santo Antônio (MT) — VIDAS 83,6 — Muito alto"), clique destacando o
   município no perfil, Borá/2023 em "Sem dados" e cinza, troca de medida
   repintando na rampa do bloco, nenhum erro de JavaScript.
 - Linha do tempo na página: container do mapa em 5,9 s, mapa completo em 6,4 s
@@ -2061,7 +2061,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 23 — Tooltip única e dinâmica no mapa (16/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** substituir as 5.570 tooltips individuais dos municípios por um
   único tooltip dinâmico, atualizado pelo hover, para testar empiricamente o
   ganho de desempenho e de usabilidade sem mexer em mais nada no painel.
@@ -2086,7 +2086,7 @@ sessão, repetidas para cada usuário.
 - Os dados continuam vindo da mensagem compacta (Sessão 22); ela passou a
   ficar guardada em `dadosPorMapa[id]` e o HTML do tooltip é montado sob
   demanda, sem duplicar conteúdo por camada.
-- `aplicarDados()` só repinta `fillColor`, anota `camada._ibisma_indice`
+- `aplicarDados()` só repinta `fillColor`, anota `camada._vidas_indice`
   (acesso O(1) ao índice do município na mensagem) e chama
   `camada.addEventParent(mapa)`.
 - **Achado:** neste leaflet, os eventos de hover do canvas chegam ao mapa
@@ -2095,7 +2095,7 @@ sessão, repetidas para cada usuário.
   mecanismo do `FeatureGroup` — faz os eventos da camada subirem ao mapa com
   `e.layer`, sem listener por camada e de forma idempotente (cada camada
   segue com um único pai depois das trocas de medida).
-- `montarTooltip()` e o CSS `.leaflet-tooltip.tooltip-ibisma` foram mantidos:
+- `montarTooltip()` e o CSS `.leaflet-tooltip.tooltip-vidas` foram mantidos:
   sem mudança visual. O `sticky` saiu das opções (era do binding antigo), sem
   alterar o posicionamento (`direction: "auto"`).
 - A mensagem do servidor, o ETL e todo o lado R continuaram iguais.
@@ -2137,54 +2137,54 @@ sessão, repetidas para cada usuário.
 
 # Sessão 24 — Repositório oficial: nome sem versão (16/09/2026)
 
-- **Pacote:** `painel_ibisma` (antes `painel_ibisma_v4`).
+- **Pacote:** `painel_vidas` (antes `painel_vidas_v4`).
 - **Objetivo:** transformar este repositório no repositório oficial do painel do
-  IBISMA, removendo todas as referências a versão (v4) e ao caráter de testes.
+  VIDAS, removendo todas as referências a versão (v4) e ao caráter de testes.
 
 ## 1. Renomeação do pacote
 
 - `DESCRIPTION`, `R/app_config.R` (`app_sys`), `app.R`, `tests/testthat.R`,
   `inst/golem-config.yml` (`golem_name`) e os scripts de `dev/` passaram a usar
-  `painel_ibisma`.
-- `R/painel_ibisma_v4-package.R` → `R/painel_ibisma-package.R` e
-  `painel_ibisma_v4.Rproj` → `painel_ibisma.Rproj`, com `git mv` (histórico
+  `painel_vidas`.
+- `R/painel_vidas_v4-package.R` → `R/painel_vidas-package.R` e
+  `painel_vidas_v4.Rproj` → `painel_vidas.Rproj`, com `git mv` (histórico
   preservado).
 - Documentação regenerada (`devtools::document()`): sai
-  `man/painel_ibisma_v4-package.Rd`, entra `man/painel_ibisma-package.Rd`; o
+  `man/painel_vidas_v4-package.Rd`, entra `man/painel_vidas-package.Rd`; o
   `NAMESPACE` passou ao formato do roxygen2 8.1.0 instalado.
 - `manifest.json` regenerado (`rsconnect::writeManifest()`): além do caminho
   novo do pacote, o arquivo deixou de listar itens que já não existem
-  (`utils_ui.R`, `fct_config.R`, `fct_graficos.R` e `data/df_ibisma.rda`) e
+  (`utils_ui.R`, `fct_config.R`, `fct_graficos.R` e `data/df_vidas.rda`) e
   passou a listar os arquivos prontos de `inst/app/data/`.
 
 ## 2. Notas das sessões e repositório
 
-- `sessions_md/2026-09-12_implementacao_painel_ibisma_v1.md` virou
-  `sessions_md/2026-09-12_implementacao_painel_ibisma.md`; título e menções a
+- `sessions_md/2026-09-12_implementacao_painel_vidas_v1.md` virou
+  `sessions_md/2026-09-12_implementacao_painel_vidas.md`; título e menções a
   números de versão foram neutralizados ("versão anterior", "pastas da sessão").
-- O repositório remoto `RafaHerzog/painel_ibisma_testes` foi renomeado para
-  `RafaHerzog/painel_ibisma` (o GitHub mantém redirecionamento do nome antigo).
-- A pasta local do projeto (`.../painel_ibisma_v4`) pode ser renomeada para
-  `painel_ibisma` com o R/RStudio fechados.
+- O repositório remoto `RafaHerzog/painel_vidas_testes` foi renomeado para
+  `RafaHerzog/painel_vidas` (o GitHub mantém redirecionamento do nome antigo).
+- A pasta local do projeto (`.../painel_vidas_v4`) pode ser renomeada para
+  `painel_vidas` com o R/RStudio fechados.
 
 ## 3. Testes e validação
 
-- `devtools::test()`: **392 asserções verdes** já sob o nome `painel_ibisma`.
-- Smoke headless: app sobe com `painel_ibisma::run_app()`, mapa com 5.570
+- `devtools::test()`: **392 asserções verdes** já sob o nome `painel_vidas`.
+- Smoke headless: app sobe com `painel_vidas::run_app()`, mapa com 5.570
   camadas, tooltip única funcionando e dados lidos por `app_sys` sem aviso.
-- Busca final por referências a `v4`/`painel_ibisma_testes` nos arquivos
+- Busca final por referências a `v4`/`painel_vidas_testes` nos arquivos
   versionados: nenhuma restante (só o `V8`, motor do `rmapshaper`, que não é
   versão do painel).
 
 ## 4. Commits da sessão
 
-- `ec28fb5` Renomeia o pacote para painel_ibisma e remove as referências de versão
+- `ec28fb5` Renomeia o pacote para painel_vidas e remove as referências de versão
 
 ---
 
 # Sessão 25 — Caracteres literais no lugar de escapes unicode (16/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** retirar do código os escapes unicode (`\u00e7`, `\u00e3`, etc.) que geram
   caracteres especiais e escrever os caracteres literais (`ç`, `ã`, `í`, `º`, travessões),
   para que qualquer texto do painel possa ser encontrado por busca manual.
@@ -2226,7 +2226,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 26 — Realce da busca sem acento nos seletores (16/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** fazer o realce do trecho buscado acompanhar a busca sem acento dos
   seletores, ligada na Sessão 13: digitar "sao" filtra "São Paulo", mas o "São" não
   ficava aceso.
@@ -2266,7 +2266,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 27 — Tooltip do mapa por toque (17/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** fazer a tooltip do mapa responder ao toque no mobile, sem
   regredir o hover no desktop, e validar com toques reais no smoke headless.
 
@@ -2313,7 +2313,7 @@ sessão, repetidas para cada usuário.
 - Smoke desktop (1600×900, `hover=true`): o hover mostra a tooltip e o clique
   em um município não a esconde mais.
 - Smoke mobile (390×844, `hover=false`): o toque em Vila Boa (GO) mostrou
-  "Vila Boa (GO) | IBISMA 85,1 | Muito alto" acima do ponto; o segundo toque
+  "Vila Boa (GO) | VIDAS 85,1 | Muito alto" acima do ponto; o segundo toque
   no oceano fechou o balão.
 - Evidências em temporários fora do git (`smoke_touch/`).
 
@@ -2326,7 +2326,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 28 — Canvas em alta resolução e emendas do mapa (17/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** corrigir o borrão do mapa em telas de alta densidade e
   investigar as linhas retas brancas que aparecem com o mapa aproximado.
 
@@ -2396,7 +2396,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 29 — Linhas claras no hover do mapa (17/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** corrigir as linhas retas claras que apareciam ao redor dos
   municípios em hover (e se acumulavam a cada município visitado), surgidas
   depois do canvas na resolução real da tela (Sessão 28).
@@ -2461,7 +2461,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 30 — Fluidez do tooltip da evolução temporal (17/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** investigar a sensação de tooltip lento e pesado nos gráficos de
   evolução (echarts) e ajustar a transição do balão.
 
@@ -2475,7 +2475,7 @@ sessão, repetidas para cada usuário.
   listener de posição por `createOrUpdate(this, "_updatePosition", 50,
   "fixRate")`: a posição do balão passa a ser recalculada no máximo a cada
   50 ms (20 Hz), qualquer que seja a taxa do mouse.
-- Medição com varredura real do mouse sobre o gráfico do IBISMA (1600×950,
+- Medição com varredura real do mouse sobre o gráfico do VIDAS (1600×950,
   DPR 2), amostrando por quadro a posição-alvo (transform inline) e a posição
   visível (transform computada) do balão:
 
@@ -2503,7 +2503,7 @@ sessão, repetidas para cada usuário.
 
 - `tooltip_echarts()` (`R/fct_graficos_evolucao.R`) ganhou
   `transitionDuration = 0.3`, valendo para os sete gráficos da evolução
-  (IBISMA e blocos).
+  (VIDAS e blocos).
 
 ## 4. Testes e validação
 
@@ -2522,7 +2522,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 31 — Canvas nítido em escalas fracionárias (18/09/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** corrigir o borrão do mapa, que ficou pior do que no canvas de
   fator fixo 2 depois do ajuste de DPR real (Sessão 28), mantendo o
   `preferCanvas` e o desenho sempre na densidade adequada da tela.
@@ -2564,7 +2564,7 @@ sessão, repetidas para cada usuário.
   JavaScript.
 - Em DPR 1,25 a captura ficou **idêntica byte a byte** à versão de fator fixo 2
   (a que o usuário considerava nítida), e o hover real seguiu mostrando a
-  tooltip ("Pontal do Araguaia (MT) — IBISMA 59,8 — Alto").
+  tooltip ("Pontal do Araguaia (MT) — VIDAS 59,8 — Alto").
 - Evidências em temporários fora do git (recortes comparativos 3× e bitmap
   extraído do canvas).
 
@@ -2576,7 +2576,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 32 — Mapa acompanhando o escopo do ranking (12/10/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** fazer o mapa da seção Onde? acompanhar o seletor de escopo —
   enquadrando a UF escolhida com uma transição animada e destacando-a
   visualmente —, sem recriar o mapa e sem tocar nas cores dos percentis.
@@ -2660,7 +2660,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 33 — Silhuetas de referência nas pétalas (12/10/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** melhorar a leitura do gráfico de pétalas em municípios com
   valores baixos, mostrando a extensão máxima que cada pétala pode atingir
   (pedido surgido em reunião). As pétalas reais continuam sendo o elemento
@@ -2733,7 +2733,7 @@ sessão, repetidas para cada usuário.
 
 # Sessão 34 — Fendas da malha e contornos de UF derivados do mosaico (13/10/2026)
 
-- **Pacote:** `painel_ibisma`.
+- **Pacote:** `painel_vidas`.
 - **Objetivo:** eliminar os espaços em branco entre municípios no zoom
   aproximado do mapa e fazer a linha de contorno da UF bater com a borda
   formada pelos municípios, corrigindo a geração da malha.
@@ -2798,7 +2798,7 @@ sessão, repetidas para cada usuário.
   inteiro, 5.570 municípios, 27 UFs e cobertura de 100% dos códigos.
 - Smoke headless: carga inicial, zoom 10 sem nenhuma cunha branca (regiões
   SE/AL e PB), escopo ES (zoom 7,0, sem Trindade) e PE (Noronha no quadro),
-  hover com tooltip ("Porto dos Gaúchos (MT) | IBISMA 61,7 | Alto"), sem
+  hover com tooltip ("Porto dos Gaúchos (MT) | VIDAS 61,7 | Alto"), sem
   erros de JavaScript ou do servidor.
 - Evidências em temporários fora do git (`smoke_antes/`, `smoke_final/`).
 

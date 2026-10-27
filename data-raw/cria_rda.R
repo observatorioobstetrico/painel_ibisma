@@ -12,7 +12,7 @@
 #     2. Constantes do índice (lidas de R/constantes.R)
 #     3. Base longa (memória)
 #     4. Tabelas por ano (inst/app/data/tabela_ano_*.rds)
-#     5. Cadastro, anos e séries (inst/app/data/dados_ibisma.rds)
+#     5. Cadastro, anos e séries (inst/app/data/dados_vidas.rds)
 #     6. Malha geográfica e desenho do mapa (inst/app/data/malha_mapa.rds)
 # =============================================================================
 
@@ -44,7 +44,7 @@ df_hemo <- read.csv("data-raw/databases/dados_servicos_hemo.csv") |>
   select(ano, codmunres, leitos_obst_med_transfusional = indicador5)
 
 # Juntando o índice, os indicadores e a hemoterapia por município e ano
-df_ibisma <- df_indice |>
+df_vidas <- df_indice |>
   transmute(
     ano, codmunres,
     indice_final = indice_mf_v1,
@@ -54,8 +54,8 @@ df_ibisma <- df_indice |>
   left_join(df_hemo, by = c("ano", "codmunres"))
 
 # Conferindo se existem duplicatas e removendo
-print(janitor::get_dupes(df_ibisma))
-df_ibisma <- df_ibisma |>
+print(janitor::get_dupes(df_vidas))
+df_vidas <- df_vidas |>
   distinct()
 
 # Lendo a tabela auxiliar com nome, UF, região e regiões de saúde
@@ -98,18 +98,18 @@ df_aux_municipios <- df_aux_municipios |>
     .after = "uf"
   )
 
-# Juntando os dados dos municípios na base do IBISMA
-df_ibisma <- df_ibisma |>
+# Juntando os dados dos municípios na base do VIDAS
+df_vidas <- df_vidas |>
   left_join(df_aux_municipios, by = c("codmunres" = "codmun"))
 
 # Conferindo o resultado
 cat(
-  "Base bruta:", nrow(df_ibisma), "linhas |",
-  n_distinct(df_ibisma$codmunres), "municípios |",
-  paste(range(df_ibisma$ano), collapse = " a "), "|",
-  sum(is.na(df_ibisma$sigla_uf)), "linhas sem UF", "\n"
+  "Base bruta:", nrow(df_vidas), "linhas |",
+  n_distinct(df_vidas$codmunres), "municípios |",
+  paste(range(df_vidas$ano), collapse = " a "), "|",
+  sum(is.na(df_vidas$sigla_uf)), "linhas sem UF", "\n"
 )
-print(colnames(df_ibisma))
+print(colnames(df_vidas))
 
 # =============================================================================
 #   2. CONSTANTES DO ÍNDICE
@@ -145,7 +145,7 @@ cortes_percentis <- c(0.2, 0.4, 0.6, 0.8)
 
 # Ampliando os indicadores guardados como proporção (fator 100 = %)
 fatores <- stats::setNames(INDICADORES$fator, INDICADORES$indicador)
-df_ibisma <- df_ibisma |>
+df_vidas <- df_vidas |>
   mutate(across(all_of(indicadores), ~ .x * fatores[[cur_column()]])) |>
   # Convertendo resultados indefinidos das divisões em valores ausentes
   mutate(across(all_of(indicadores), ~ replace(.x, is.nan(.x), NA)))
@@ -155,7 +155,7 @@ df_ibisma <- df_ibisma |>
 #   Uma linha por município, ano e medida, com os valores de VIDAS de 0 a 100
 # =============================================================================
 
-ibisma_longo <- df_ibisma |>
+vidas_longo <- df_vidas |>
   # Transformando as sete colunas de medidas em duas (medida e valor)
   pivot_longer(
     cols = all_of(medidas),
@@ -173,9 +173,9 @@ ibisma_longo <- df_ibisma |>
   arrange(ano, codmunres, medida)
 
 # Conferindo: cada linha da base bruta vira sete linhas na base longa
-cat("Linhas na base longa:", nrow(ibisma_longo), "\n")
-cat("Faixa dos valores:", paste(range(ibisma_longo$valor), collapse = " a "), "\n")
-print(head(ibisma_longo))
+cat("Linhas na base longa:", nrow(vidas_longo), "\n")
+cat("Faixa dos valores:", paste(range(vidas_longo$valor), collapse = " a "), "\n")
+print(head(vidas_longo))
 
 # =============================================================================
 #   4. TABELAS POR ANO
@@ -187,9 +187,9 @@ print(head(ibisma_longo))
 dir.create("inst/app/data", showWarnings = FALSE, recursive = TRUE)
 
 # Percorrendo os dez anos da base
-for (ano_atual in sort(unique(df_ibisma$ano))) {
+for (ano_atual in sort(unique(df_vidas$ano))) {
   # Filtrando o ano
-  base_ano <- filter(ibisma_longo, ano == ano_atual)
+  base_ano <- filter(vidas_longo, ano == ano_atual)
 
   # Classificando nas cinco categorias pelos quintis de cada medida no ano
   tabela_ano <- base_ano |>
@@ -245,7 +245,7 @@ for (ano_atual in sort(unique(df_ibisma$ano))) {
 # =============================================================================
 
 # Montando o cadastro de municípios (uma linha por município)
-municipios <- df_ibisma |>
+municipios <- df_vidas |>
   distinct(
     codmunres, municipio, sigla_uf, uf,
     regiao, r_saude, macro_r_saude
@@ -253,15 +253,15 @@ municipios <- df_ibisma |>
   arrange(municipio)
 
 # Lista dos anos disponíveis
-anos <- sort(unique(df_ibisma$ano))
+anos <- sort(unique(df_vidas$ano))
 
 # Montando as séries: uma linha por município e ano, com medidas e indicadores
-series <- ibisma_longo |>
+series <- vidas_longo |>
   select(ano, codmunres, medida, valor) |>
   pivot_wider(names_from = medida, values_from = valor) |>
   # Acrescentando os indicadores brutos que compõem os blocos
   left_join(
-    select(df_ibisma, ano, codmunres, all_of(indicadores)),
+    select(df_vidas, ano, codmunres, all_of(indicadores)),
     by = c("ano", "codmunres")
   ) |>
   # Preenchendo os anos que faltam em cada município (Borá não tem 2023)
@@ -285,7 +285,7 @@ saveRDS(
     anos = anos,
     series = series
   ),
-  "inst/app/data/dados_ibisma.rds",
+  "inst/app/data/dados_vidas.rds",
   compress = "xz"
 )
 
@@ -344,7 +344,7 @@ limpar_malha <- function(malha) {
 # Baixando a malha municipal (já vem simplificada pelo geobr)
 malha_municipios <- read_municipality(year = 2020, showProgress = FALSE)
 
-# Criando a chave de 6 dígitos usada pela base do IBISMA (padrão DATASUS)
+# Criando a chave de 6 dígitos usada pela base do VIDAS (padrão DATASUS)
 malha_municipios <- malha_municipios |>
   mutate(
     codmunres = as.integer(substr(as.character(code_muni), 1, 6)),
@@ -404,7 +404,7 @@ malha_ufs <- malha_ufs[!st_is_empty(malha_ufs), ]
 
 # ---------------------------------------------------------------- conferências
 
-# Conferindo a cobertura dos códigos de município da base do IBISMA
+# Conferindo a cobertura dos códigos de município da base do VIDAS
 cat(
   "Cobertura da malha:",
   round(100 * mean(municipios$codmunres %in% malha_municipios$codmunres), 2),

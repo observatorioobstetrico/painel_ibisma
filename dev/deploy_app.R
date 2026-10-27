@@ -14,7 +14,7 @@ if (!requireNamespace("rsconnect", quietly = TRUE)) {
 
 # Definindo a conta e o nome do aplicativo no shinyapps.io
 account <- "observatorioobstetrico"
-appName <- "painel_ibisma"
+appName <- "painel_vidas"
 
 # Fazendo o deploy sem appFiles para que o .rscignore seja respeitado
 rsconnect::deployApp(

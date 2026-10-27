@@ -4,10 +4,10 @@
 "$schema" = "https://cdn.posit.co/publisher/schemas/posit-publishing-schema-v3.json"
 type = "r-shiny"
 entrypoint = "app.R"
-title = "painel_ibisma"
+title = "painel_vidas"
 files = [
     "/app.R",
-    "/.posit/publish/painel_ibisma-GABA.toml",
+    "/.posit/publish/painel_vidas-GABA.toml",
     "/.posit/publish/deployments/deployment-BAQP.toml",
 ]
 validate = true

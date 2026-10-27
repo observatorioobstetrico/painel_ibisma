@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # =============================================================================
-#   SMOKE TEST VISUAL/HEADLESS DO PAINEL IBISMA
+#   SMOKE TEST VISUAL/HEADLESS DO PAINEL VIDAS
 #   Sobe o app em segundo plano, abre o Chrome headless, espera um seletor,
 #   tira um screenshot, avalia JavaScript opcional e derruba o servidor.
 #
@@ -32,7 +32,7 @@ tem_flag <- function(nome) any(args == paste0("--", nome))
 
 porta   <- as.integer(pega_arg("port", "4848"))
 outdir  <- pega_arg("outdir", file.path(getwd(), "dev", "smoke"))
-seletor <- pega_arg("wait-for", ".navbar-ibisma")
+seletor <- pega_arg("wait-for", ".navbar-vidas")
 shot    <- pega_arg("shot", "smoke.png")
 js_eval <- pega_arg("eval", "")
 largura <- as.integer(pega_arg("width", "1600"))
@@ -59,7 +59,7 @@ processo <- callr::r_bg(
   function(pacote, porta) {
     setwd(pacote)
     pkgload::load_all(pacote, quiet = TRUE)
-    print(painel_ibisma::run_app(
+    print(painel_vidas::run_app(
       options = list(port = porta, host = "127.0.0.1", launch.browser = FALSE)
     ))
   },
@@ -275,7 +275,7 @@ if (tem_flag("full")) {
     "(function () {
        var estilo = document.createElement('style');
        estilo.id = 'ajuste-captura';
-       estilo.textContent = '.navbar-ibisma { position: static !important; }';
+       estilo.textContent = '.navbar-vidas { position: static !important; }';
        document.head.appendChild(estilo);
      })()"
   )

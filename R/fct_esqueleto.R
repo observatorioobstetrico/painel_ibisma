@@ -577,7 +577,7 @@ esqueleto_grade_evolucao <- function() {
   htmltools::tags$div(
     class = "evolucao-grade esqueleto esqueleto--grade-evolucao",
     `aria-hidden` = "true",
-    cartao("evolucao-card--ibisma", ALTURA_GRAFICO_IBISMA),
+    cartao("evolucao-card--vidas", ALTURA_GRAFICO_VIDAS),
     htmltools::tags$h4(
       class = "evolucao-grade__titulo",
       esqueleto_barra("9rem", "0.55em")

@@ -9,7 +9,7 @@ id = "01a0a145-c45a-173f-0fc7-0626b6ce5413"
 dashboard_url = "https://connect.posit.cloud/connect/#/apps/01a0a145-c45a-173f-0fc7-0626b6ce5413"
 direct_url = "https://connect.posit.cloud/content/01a0a145-c45a-173f-0fc7-0626b6ce5413/"
 logs_url = "https://connect.posit.cloud/connect/#/apps/01a0a145-c45a-173f-0fc7-0626b6ce5413/logs"
-configuration_name = "painel_ibisma-GABA"
+configuration_name = "painel_vidas-GABA"
 
 [connect_cloud]
 account_name = "rafasantanah21"

@@ -2880,7 +2880,7 @@
     "DESCRIPTION": {
       "checksum": "54d3b3a4f770453aa74f43e85653d26a"
     },
-    "inst/app/data/dados_ibisma.rds": {
+    "inst/app/data/dados_vidas.rds": {
       "checksum": "75b4cd8169f51c01d6b3324dc61b41fa"
     },
     "inst/app/data/malha_mapa.rds": {
@@ -3048,7 +3048,7 @@
     "R/mod_onde.R": {
       "checksum": "0ce9623a85397a6fa4766dcf4888bdc8"
     },
-    "R/painel_ibisma-package.R": {
+    "R/painel_vidas-package.R": {
       "checksum": "3071f23bb815b0bcaee29a97ba422ea1"
     },
     "R/run_app.R": {

@@ -19,7 +19,7 @@ medir <- function(nome, expressao) {
 }
 
 # Leitura do arquivo pequeno com cadastro, anos e séries
-medir("dados_ibisma() (arquivo pronto)", dados <- dados_ibisma())
+medir("dados_vidas() (arquivo pronto)", dados <- dados_vidas())
 
 # Leitura da tabela do primeiro ano e de um ano ainda não visitado
 medir("tabela_ano(2024) (primeira leitura)", tabela_ano(dados, 2024L))

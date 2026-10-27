@@ -13,12 +13,12 @@ app_ui <- function(request) {
       padding = 0,
       gap = 0,
       fillable = FALSE,
-      theme = tema_ibisma(),
+      theme = tema_vidas(),
       lang = "pt-BR",
       # Criando o ponto de ancoragem do topo da página
       htmltools::tags$a(id = "topo"),
       # Inserindo a barra de navegação por âncoras
-      navbar_ibisma(),
+      navbar_vidas(),
       # Montando as seções do painel em página única
       htmltools::tags$main(
         class = "conteudo-painel",
@@ -26,7 +26,7 @@ app_ui <- function(request) {
         mod_como_ui("como")
       ),
       # Inserindo o rodapé institucional
-      rodape_ibisma()
+      rodape_vidas()
     )
   )
 }
@@ -41,7 +41,7 @@ app_ui <- function(request) {
 #'
 #' @return Objeto bs_theme com as cores e fontes do projeto.
 #' @noRd
-tema_ibisma <- function() {
+tema_vidas <- function() {
   bslib::bs_theme(
     version = 5,
     bg = "#FFFFFF",
@@ -68,12 +68,12 @@ tema_ibisma <- function() {
 #'
 #' @return Elemento HTML da navbar com âncoras para as seções.
 #' @noRd
-navbar_ibisma <- function() {
+navbar_vidas <- function() {
   # Montando uma navbar escura Bootstrap 5 com colapso automático em telas pequenas
   htmltools::tags$nav(
-    class = "navbar navbar-expand-md navbar-dark navbar-ibisma",
+    class = "navbar navbar-expand-md navbar-dark navbar-vidas",
     `aria-label` = "Navegação principal",
-    id = "navbar-ibisma",
+    id = "navbar-vidas",
     htmltools::tags$div(
       class = "painel-container navbar-conteudo",
       # Ligando a marca do painel ao topo da página
@@ -101,8 +101,8 @@ navbar_ibisma <- function() {
         class = "navbar-toggler",
         type = "button",
         `data-bs-toggle` = "collapse",
-        `data-bs-target` = "#menu-ibisma",
-        `aria-controls` = "menu-ibisma",
+        `data-bs-target` = "#menu-vidas",
+        `aria-controls` = "menu-vidas",
         `aria-expanded` = "false",
         `aria-label` = "Abrir menu de navegação",
         htmltools::tags$span(class = "navbar-toggler-icon")
@@ -110,7 +110,7 @@ navbar_ibisma <- function() {
       # Listando as âncoras das seções do painel
       htmltools::tags$div(
         class = "collapse navbar-collapse",
-        id = "menu-ibisma",
+        id = "menu-vidas",
         htmltools::tags$ul(
           class = "navbar-nav ms-auto",
           htmltools::tags$li(
@@ -131,7 +131,7 @@ navbar_ibisma <- function() {
 #'
 #' @return Elemento HTML do rodapé.
 #' @noRd
-rodape_ibisma <- function() {
+rodape_vidas <- function() {
   # Definindo os logos negativos e seus textos alternativos para o rodapé
   realizacao <- c(
     "logos/realizacao/logo_oobr_negativo.png" = "Observatório Obstétrico Brasileiro",

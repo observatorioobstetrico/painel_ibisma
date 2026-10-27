@@ -47,7 +47,7 @@ usethis::use_test("app")
 # Documentation
 
 ## Vignette ----
-usethis::use_vignette("painel_ibisma")
+usethis::use_vignette("painel_vidas")
 devtools::build_vignettes()
 
 ## Code Coverage----
