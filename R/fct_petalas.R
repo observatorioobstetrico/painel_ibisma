@@ -54,6 +54,23 @@ rotulo_petala <- function(medida, nome) {
   ifelse(is.na(rotulo), as.character(nome), rotulo)
 }
 
+#' Definindo uma função que monta o rodapé com município e ano dos tooltips
+#'
+#' @param contexto Texto com o município e o ano (opcional).
+#' @return Linha HTML discreta ou texto vazio.
+#' Usada em: fct_petalas.R (tooltip_petala) e fct_perfil.R (tooltip_ranking e tooltip_indice).
+#' @noRd
+contexto_tooltip <- function(contexto = NULL) {
+  if (is.null(contexto) || is.na(contexto) || !nzchar(contexto)) {
+    return("")
+  }
+  paste0(
+    '<div class="tooltip-petala__contexto">',
+    htmltools::htmlEscape(contexto),
+    "</div>"
+  )
+}
+
 #' Definindo uma função que monta o conteúdo HTML do tooltip de uma pétala
 #'
 #' @param nome Nome do bloco.
@@ -62,14 +79,17 @@ rotulo_petala <- function(medida, nome) {
 #' @param pos_nac Posição do município no ranking nacional.
 #' @param total_nac Total de municípios ranqueados.
 #' @param medida Identificador do bloco que define a cor da dimensão.
+#' @param contexto Texto com o município e o ano (opcional).
 #' @return Texto HTML pronto para o tooltip do Bootstrap.
 #' Usada em: fct_petalas.R (petala_svg) e fct_perfil.R (grafico_barras_blocos).
 #' @noRd
-tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida) {
+tooltip_petala <- function(nome, valor, categoria, pos_nac, total_nac, medida,
+                           contexto = NULL) {
   # Montando o cartão com nome, valor, categoria e ranking
   # O marcador ao lado do nome e o selo usam a rampa de cor da dimensão
   paste0(
     '<div class="tooltip-petala" style="--cor-medida:', cor_medida(medida), ';">',
+    contexto_tooltip(contexto),
     '<div class="tooltip-petala__titulo">',
     '<span class="tooltip-petala__marca"></span>', nome,
     "</div>",
@@ -149,10 +169,11 @@ guia_petala_svg <- function(i) {
 #'
 #' @param i Índice do bloco.
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
+#' @param contexto Texto com o município e o ano (opcional).
 #' @return Elemento HTML com o grupo SVG da pétala.
 #' Usada em: fct_petalas.R (grafico_petalas).
 #' @noRd
-petala_svg <- function(i, blocos) {
+petala_svg <- function(i, blocos, contexto = NULL) {
   # Extraindo os dados e calculando os fatores de escala da pétala
   nome <- as.character(blocos$nome[i])
   valor <- blocos$valor[i]
@@ -216,7 +237,8 @@ petala_svg <- function(i, blocos) {
     tabindex = "0",
     title = tooltip_petala(
       nome, blocos$valor[i], blocos$categoria[i],
-      blocos$pos_nac[i], blocos$total_nac[i], blocos$medida[i]
+      blocos$pos_nac[i], blocos$total_nac[i], blocos$medida[i],
+      contexto = contexto
     ),
     # Cobrindo todo o leque com uma área invisível para facilitar o hover
     htmltools::tags$path(
@@ -269,10 +291,11 @@ petala_svg <- function(i, blocos) {
 #' Definindo uma função que monta o gráfico de pétalas dos seis blocos do Índice VIDAS
 #'
 #' @param blocos Data frame com nome, valor, categoria, cor e ranking dos blocos.
+#' @param contexto Texto com o município e o ano (opcional).
 #' @return Elemento HTML com o leque de pétalas e as legendas de apoio.
 #' Usada em: fct_perfil.R (palco do município).
 #' @noRd
-grafico_petalas <- function(blocos) {
+grafico_petalas <- function(blocos, contexto = NULL) {
   # Garantindo que os nomes cheguem como texto
   blocos$nome <- as.character(blocos$nome)
   # Descobrindo a medida de cada pétala quando ela não vier pronta
@@ -296,7 +319,7 @@ grafico_petalas <- function(blocos) {
 
   # Montando cada pétala na ordem dos seis blocos do painel
   petalas <- lapply(seq_len(nrow(blocos)), function(i) {
-    petala_svg(i, blocos)
+    petala_svg(i, blocos, contexto = contexto)
   })
 
   # Montando o disco central que sustenta o leque

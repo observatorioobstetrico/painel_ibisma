@@ -317,13 +317,14 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
 (function () {
   /* Reunindo os seletores das tooltips ricas e dos campos com texto próprio */
   var SELETOR_PETALAS = '.grupo-petala[data-bs-toggle="tooltip"]';
-  var SELETOR_CHIPS = '.perfil-indice__chip[data-bs-toggle="tooltip"]';
   var SELETOR_INFO = '.perfil-palco__info[data-bs-toggle="tooltip"]';
   var SELETOR_SENTIDO = '.indicador-card__sentido[data-bs-toggle="tooltip"]';
+  var SELETOR_REGUA = '.perfil-indice__regua[data-bs-toggle="tooltip"]';
   var SELETOR_BARRAS = '.resultado-blocos__trilho[data-bs-toggle="tooltip"]';
   var SELETOR_RANKINGS = '.perfil-rankings__trilho[data-bs-toggle="tooltip"]';
-  var SELETOR_CURSOR = SELETOR_PETALAS + ", " + SELETOR_BARRAS + ", " + SELETOR_RANKINGS;
-  var SELETOR_ANCORADAS = SELETOR_CHIPS + ", " + SELETOR_INFO + ", " + SELETOR_SENTIDO;
+  var SELETOR_CURSOR = SELETOR_PETALAS + ", " + SELETOR_BARRAS + ", " +
+    SELETOR_RANKINGS + ", " + SELETOR_REGUA;
+  var SELETOR_ANCORADAS = SELETOR_INFO + ", " + SELETOR_SENTIDO;
   var SELETOR_METRICAS = '.metrica-tooltip[data-tooltip-texto]';
 
   /* Executando a função imediatamente quando a página já estiver pronta */
@@ -346,7 +347,7 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       delay: { show: 80, hide: 40 }
     };
     if (rico) {
-      /* A chip do índice usa HTML com as cores gerado pelo servidor */
+      /* As tooltips ancoradas usam HTML gerado pelo servidor */
       opcoes.html = true;
       /* A sanitização removeria os estilos em linha com as cores da dimensão */
       opcoes.sanitize = false;
@@ -358,14 +359,14 @@ Shiny.addCustomMessageHandler("ibisma_comparacao", function (mensagem) {
       /* Os campos territoriais usam o texto completo guardado em data */
       opcoes.title = el.getAttribute("data-tooltip-texto");
     }
-    /* Aceitando clique na chip do índice além do hover e do foco */
+    /* Aceitando clique nas tooltips ancoradas além do hover e do foco */
     if (el.dataset.tooltipGatilho) {
       opcoes.trigger = el.dataset.tooltipGatilho;
     }
     new bootstrap.Tooltip(el, opcoes);
   }
 
-  /* Ativando as tooltips ancoradas da chip e do botão de informação */
+  /* Ativando as tooltips ancoradas do botão de informação e da chip de sentido */
   function inicializarTooltipsRicas() {
     document.querySelectorAll(SELETOR_ANCORADAS).forEach(function (el) {
       if (el.dataset.tooltipIniciado) return;

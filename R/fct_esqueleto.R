@@ -359,7 +359,21 @@ esqueleto_indice <- function() {
     # Reservando a frase do resultado em uma única linha, como no texto real
     htmltools::tags$p(
       class = "perfil-indice__frase",
-      esqueleto_barra("13.2rem", "0.7em")
+      esqueleto_barra("16rem", "0.7em")
+    ),
+    # Reservando a régua de categorias e os rótulos dos extremos
+    htmltools::tags$div(
+      class = "perfil-indice__regua",
+      htmltools::tags$div(
+        class = "perfil-indice__trilho",
+        esqueleto_barra("100%", "0.5rem")
+      ),
+      htmltools::tags$div(
+        class = "perfil-indice__extremos",
+        style = "min-height:1.5em;align-items:center;",
+        esqueleto_barra("5rem", "0.65em"),
+        esqueleto_barra("5rem", "0.65em")
+      )
     )
   )
 }
@@ -370,17 +384,13 @@ esqueleto_indice <- function() {
 #' Usada em: fct_esqueleto.R (esqueleto_palco).
 #' @noRd
 esqueleto_rankings <- function() {
-  # Montando um item com rótulo, posição, trilho e extremos neutros
-  item <- function(classe, largura_rotulo, largura_valor) {
+  # Montando um item com rótulo, trilho e extremos neutros
+  item <- function(classe, largura_rotulo) {
     htmltools::tags$div(
       class = paste("perfil-rankings__item", classe),
       htmltools::tags$span(
         class = "perfil-rankings__rotulo",
         esqueleto_barra(largura_rotulo, "0.65em")
-      ),
-      htmltools::tags$span(
-        class = "perfil-rankings__valor",
-        esqueleto_barra(largura_valor, "1.2em")
       ),
       htmltools::tags$div(
         class = "perfil-rankings__trilho esqueleto__barra",
@@ -397,17 +407,17 @@ esqueleto_rankings <- function() {
       htmltools::tags$div(
         class = "perfil-rankings__extremos",
         style = "min-height:1.5em;align-items:center;",
-        esqueleto_barra("1.3rem", "0.65em"),
-        esqueleto_barra("2.2rem", "0.65em")
+        esqueleto_barra("3.4rem", "0.65em"),
+        esqueleto_barra("3.6rem", "0.65em")
       )
     )
   }
 
   htmltools::tags$div(
     class = "perfil-rankings",
-    item("perfil-rankings__item--macro", "5rem", "3.6rem"),
-    item("perfil-rankings__item--uf", "2.2rem", "3.6rem"),
-    item("perfil-rankings__item--brasil", "3rem", "7rem")
+    item("perfil-rankings__item--macro", "5rem"),
+    item("perfil-rankings__item--uf", "2.2rem"),
+    item("perfil-rankings__item--brasil", "3rem")
   )
 }
 
@@ -438,7 +448,6 @@ esqueleto_palco <- function() {
       esqueleto_metrica("6rem", "9rem")
     ),
     esqueleto_indice(),
-    esqueleto_rankings(),
     htmltools::tags$div(
       class = "perfil-palco__cabecalho",
       htmltools::tags$h4(
@@ -456,7 +465,8 @@ esqueleto_palco <- function() {
         class = "perfil-palco__coluna perfil-palco__coluna--barras",
         esqueleto_barras_blocos()
       )
-    )
+    ),
+    esqueleto_rankings()
   )
 }
 

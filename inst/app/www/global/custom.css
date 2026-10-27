@@ -1276,6 +1276,13 @@ input:focus-visible,
   margin-top: 0.9rem;
 }
 
+/* Dando visibilidade ao foco por teclado na régua interativa */
+.perfil-indice__regua:focus-visible {
+  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 /* Posicionando as faixas e o marcador no mesmo trilho */
 .perfil-indice__trilho {
   position: relative;
@@ -1317,24 +1324,16 @@ input:focus-visible,
   color: var(--cor-texto-suave);
 }
 
-/* Indicando que a chip da categoria abre a régua do índice */
-.perfil-indice__chip {
-  cursor: pointer;
-}
-
-.perfil-indice__chip:focus-visible {
-  outline: 3px solid rgb(var(--cor-azul-claro-rgb) / 0.55);
-  outline-offset: 2px;
-}
-
-/* Distribuindo os três rankings logo abaixo do valor do índice */
+/* Distribuindo os três rankings na base do palco, abaixo dos gráficos */
 .perfil-rankings {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
   gap: 1.25rem 2rem;
-  margin-top: 1rem;
-  margin-bottom: 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cor-borda);
 }
 
 /* Empilhando rótulo, valor, trilho e extremos de cada ranking */
@@ -1354,30 +1353,7 @@ input:focus-visible,
   text-overflow: ellipsis;
 }
 
-/* Mantendo a posição em destaque e o total em tamanho menor */
-.perfil-rankings__valor {
-  display: flex;
-  align-items: baseline;
-  gap: 0.3rem;
-  font-size: var(--fonte-grande-size);
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--cor-azul-escuro);
-}
-
-.perfil-rankings__posicao sup {
-  top: -0.35em;
-  font-size: 0.55em;
-  font-weight: 700;
-}
-
-.perfil-rankings__total {
-  font-size: var(--fonte-media-size);
-  font-weight: 600;
-  color: var(--cor-texto-suave);
-}
-
-/* Desenhando o trilho do ranking, do pior ao melhor */
+/* Desenhando o trilho do ranking, do menor VIDA ao maior VIDA */
 .perfil-rankings__trilho {
   position: relative;
   height: 4px;
@@ -2005,12 +1981,6 @@ input:focus-visible,
   max-width: 26rem;
 }
 
-.tooltip.tooltip-ibisma--larga .perfil-indice__regua {
-  width: 18rem;
-  max-width: 70vw;
-  margin: 0;
-}
-
 /* Fazendo a tooltip das pétalas e barras seguir o cursor como no echarts */
 .tooltip-cursor {
   position: fixed;
@@ -2086,6 +2056,24 @@ input:focus-visible,
 .tooltip-petala__valor {
   font-size: var(--fonte-media-size);
   font-weight: 700;
+}
+
+/* Mostrando a leitura do ranking com destaque só no começo da frase */
+.tooltip-petala__frase {
+  font-size: var(--fonte-media-size);
+  line-height: 1.5;
+  color: var(--cor-azul-escuro);
+}
+
+.tooltip-petala__frase strong {
+  font-weight: 700;
+}
+
+/* Identificando o município e o ano no topo discreto da tooltip */
+.tooltip-petala__contexto {
+  margin-bottom: 0.3rem;
+  font-size: var(--fonte-pequena-size);
+  color: var(--cor-texto-suave);
 }
 
 /* -------------------------------------------------------- estado vazio */

@@ -54,21 +54,15 @@ frase_percentil <- function(valor, pos_nac = NULL, total_nac = NULL) {
   if (!is.null(pos_nac) && !is.null(total_nac) &&
       !is.na(pos_nac) && !is.na(total_nac)) {
     if (pos_nac == 1) {
-      return(paste0(
-        "Pior resultado entre os ",
-        formatar_inteiro(total_nac), " municípios"
-      ))
+      return("Menor VIDA entre todos os municípios brasileiros")
     }
     if (pos_nac == total_nac) {
-      return(paste0(
-        "Melhor resultado entre os ",
-        formatar_inteiro(total_nac), " municípios"
-      ))
+      return("Maior VIDA entre todos os municípios brasileiros")
     }
   }
   # Mostrando a parcela de municípios que está abaixo deste no índice
   paste0(
-    "Superior a ",
+    "Maior VIDA que ",
     formatar_numero(valor),
     "% dos municípios brasileiros"
   )
@@ -137,24 +131,52 @@ regua_indice <- function(valor) {
   )
 }
 
+#' Definindo uma função que monta o conteúdo do tooltip da régua do índice
+#'
+#' @param resumo Lista retornada por resumo_municipio().
+#' @param contexto Texto com o município e o ano (opcional).
+#' @return Texto HTML com valor, categoria e leitura do percentil.
+#' Usada em: perfil_indice().
+#' @noRd
+tooltip_indice <- function(resumo, contexto = NULL) {
+  ## Obs.: este bloco usa funções auxiliares de fct_ui, fct_dados e fct_perfil.
+  paste0(
+    '<div class="tooltip-petala" style="--cor-medida:', COR_VIDAS, ';">',
+    contexto_tooltip(contexto),
+    '<div class="tooltip-petala__titulo">',
+    '<span class="tooltip-petala__marca"></span>Índice VIDAS',
+    "</div>",
+    '<div class="tooltip-petala__linha">',
+    '<span class="tooltip-petala__rotulo">Valor</span>',
+    '<span class="tooltip-petala__resultado">',
+    '<span class="tooltip-petala__valor">', formatar_numero(resumo$valor), "</span>",
+    badge_categoria(resumo$categoria),
+    "</span>",
+    "</div>",
+    '<div class="tooltip-petala__frase">',
+    frase_percentil(resumo$valor, resumo$pos_nac, resumo$total_nac),
+    "</div>",
+    "</div>"
+  )
+}
+
 #' Definindo uma função que monta o bloco do índice do município
 #'
 #' @param resumo Lista retornada por resumo_municipio().
 #' @param ano Ano de referência exibido no rótulo do valor.
+#' @param contexto Texto com o município e o ano (opcional).
 #' @return Elemento HTML com rótulo, valor, categoria e leitura do percentil.
 #' Usada em: perfil_palco().
 #' @noRd
-perfil_indice <- function(resumo, ano) {
+perfil_indice <- function(resumo, ano, contexto = NULL) {
   ## Obs.: este bloco usa funções auxiliares de fct_ui, fct_dados e fct_perfil.
-  # Montando a chip da categoria com a régua do índice no tooltip
-  chip <- htmltools::tagAppendAttributes(
-    badge_categoria(resumo$categoria),
-    class = "perfil-indice__chip",
+  # Tornando a régua interativa com a leitura completa do índice
+  regua <- htmltools::tagAppendAttributes(
+    regua_indice(resumo$valor),
     `data-bs-toggle` = "tooltip",
-    `data-tooltip-gatilho` = "hover focus click",
-    `data-tooltip-larga` = "sim",
+    `data-bs-placement` = "top",
     tabindex = "0",
-    title = as.character(regua_indice(resumo$valor))
+    title = tooltip_indice(resumo, contexto)
   )
 
   htmltools::tags$div(
@@ -172,49 +194,87 @@ perfil_indice <- function(resumo, ano) {
         formatar_numero(resumo$valor)
       ),
       htmltools::tags$span(class = "perfil-indice__escala", "de 100"),
-      chip
+      badge_categoria(resumo$categoria)
     ),
     htmltools::tags$p(
       class = "perfil-indice__frase",
       frase_percentil(resumo$valor, resumo$pos_nac, resumo$total_nac)
-    )
+    ),
+    # Mostrando a régua com as categorias e a posição do município no índice
+    regua
   )
+}
+
+#' Definindo uma função que separa o destaque da posição no ranking
+#'
+#' @param posicao Posição do município (1 = menor VIDA).
+#' @param total Número de municípios avaliados.
+#' @return Lista com o trecho em destaque e o complemento da frase.
+#' Usada em: fct_perfil.R (frase_ranking e tooltip_ranking).
+#' @noRd
+partes_ranking <- function(posicao, total) {
+  ## Obs.: este bloco usa funções auxiliares de fct_dados.
+  if (is.na(posicao) || is.na(total)) {
+    return(list(destaque = "Sem dados", complemento = ""))
+  }
+  # Ajustando o plural quando o escopo tem um único município
+  municipios <- if (total == 1) "município" else "municípios"
+  complemento <- paste0("entre ", formatar_inteiro(total), " ", municipios)
+  if (posicao == 1) {
+    return(list(destaque = "Menor VIDA", complemento = complemento))
+  }
+  if (posicao == total) {
+    return(list(destaque = "Maior VIDA", complemento = complemento))
+  }
+  list(
+    destaque = paste0(formatar_inteiro(posicao), "ª menor VIDA"),
+    complemento = complemento
+  )
+}
+
+#' Definindo uma função que descreve a posição no ranking
+#'
+#' @param posicao Posição do município (1 = menor VIDA).
+#' @param total Número de municípios avaliados.
+#' @return Texto com o menor, o maior ou a posição intermediária.
+#' Usada em: fct_perfil.R (perfil_ranking_item).
+#' @noRd
+frase_ranking <- function(posicao, total) {
+  ## Obs.: este bloco usa funções auxiliares de fct_perfil.
+  partes <- partes_ranking(posicao, total)
+  trimws(paste(partes$destaque, partes$complemento))
 }
 
 #' Definindo uma função que monta o conteúdo do tooltip de um ranking
 #'
 #' @param rotulo Rótulo do ranking.
-#' @param posicao Posição do município (1 = pior).
+#' @param posicao Posição do município (1 = menor VIDA).
 #' @param total Número de municípios avaliados.
 #' @param escopo Nome do território avaliado (opcional).
-#' @param rotulo_escopo Rótulo do território avaliado.
+#' @param contexto Texto com o município e o ano (opcional).
 #' @return Texto HTML com a posição e o escopo do ranking.
 #' Usada em: fct_perfil.R (perfil_ranking_item).
 #' @noRd
 tooltip_ranking <- function(rotulo, posicao, total, escopo = NULL,
-                            rotulo_escopo = "Escopo") {
-  ## Obs.: este bloco usa funções auxiliares de fct_dados.
-  # Montando o cartão com o ranking e o escopo avaliado
+                            contexto = NULL) {
+  ## Obs.: este bloco usa funções auxiliares de fct_perfil.
+  # Incluindo o nome do território no título quando houver
+  titulo <- if (!is.null(escopo) && !is.na(escopo) && nzchar(escopo)) {
+    paste0(rotulo, " (", escopo, ")")
+  } else {
+    rotulo
+  }
+  partes <- partes_ranking(posicao, total)
+  # Montando o cartão com o título e a leitura da posição
   paste0(
     '<div class="tooltip-petala" style="--cor-medida:', COR_VIDAS, ';">',
+    contexto_tooltip(contexto),
     '<div class="tooltip-petala__titulo">',
-    '<span class="tooltip-petala__marca"></span>', rotulo,
+    '<span class="tooltip-petala__marca"></span>', titulo,
     "</div>",
-    '<div class="tooltip-petala__linha">',
-    '<span class="tooltip-petala__rotulo">Ranking</span>',
-    '<span class="tooltip-petala__valor">',
-    rotulo_posicao(posicao, total),
-    "</span></div>",
-    if (!is.null(escopo) && !is.na(escopo) && nzchar(escopo)) {
-      paste0(
-        '<div class="tooltip-petala__linha">',
-        '<span class="tooltip-petala__rotulo">', rotulo_escopo, "</span>",
-        '<span class="tooltip-petala__valor">', escopo, "</span>",
-        "</div>"
-      )
-    } else {
-      ""
-    },
+    '<div class="tooltip-petala__frase">',
+    "<strong>", partes$destaque, "</strong> ", partes$complemento,
+    "</div>",
     "</div>"
   )
 }
@@ -222,16 +282,16 @@ tooltip_ranking <- function(rotulo, posicao, total, escopo = NULL,
 #' Definindo uma função que monta um item de ranking com trilho de posição
 #'
 #' @param rotulo Rótulo do ranking.
-#' @param posicao Posição do município (1 = pior).
+#' @param posicao Posição do município (1 = menor VIDA).
 #' @param total Número de municípios avaliados.
 #' @param classe Classe extra do item na grade.
 #' @param escopo Nome do território avaliado (opcional).
-#' @param rotulo_escopo Rótulo do território avaliado.
-#' @return Elemento HTML com rótulo, posição, trilho e extremos.
+#' @param contexto Texto com o município e o ano (opcional).
+#' @return Elemento HTML com rótulo, trilho e extremos.
 #' Usada em: perfil_rankings().
 #' @noRd
 perfil_ranking_item <- function(rotulo, posicao, total, classe, escopo = NULL,
-                                rotulo_escopo = "Escopo") {
+                                contexto = NULL) {
   ## Obs.: este bloco usa funções auxiliares de fct_dados e fct_perfil.
   # Calculando a posição do ponto no trilho, do pior ao melhor
   posicao_ponto <- posicao_trilho(posicao, total)
@@ -244,37 +304,30 @@ perfil_ranking_item <- function(rotulo, posicao, total, classe, escopo = NULL,
       style = sprintf("left:%.1f%%;", posicao_ponto)
     )
   }
+  # Montando o título com o escopo para a leitura acessível
+  titulo <- if (!is.null(escopo) && !is.na(escopo) && nzchar(escopo)) {
+    paste0(rotulo, " (", escopo, ")")
+  } else {
+    rotulo
+  }
 
   htmltools::tags$div(
     class = paste("perfil-rankings__item", classe),
     htmltools::tags$span(class = "perfil-rankings__rotulo", rotulo),
-    # Mantendo a posição em destaque e o total em tamanho menor
-    htmltools::tags$span(
-      class = "perfil-rankings__valor",
-      htmltools::tags$span(
-        class = "perfil-rankings__posicao",
-        formatar_inteiro(posicao),
-        htmltools::tags$sup("º")
-      ),
-      htmltools::tags$span(
-        class = "perfil-rankings__total",
-        paste0("de ", formatar_inteiro(total))
-      )
-    ),
     # Desenhando o trilho com o ponto na posição do município
     htmltools::tags$div(
       class = "perfil-rankings__trilho",
       `data-bs-toggle` = "tooltip",
       `data-bs-placement` = "top",
       tabindex = "0",
-      `aria-label` = paste0(rotulo, ": ", rotulo_posicao(posicao, total)),
-      title = tooltip_ranking(rotulo, posicao, total, escopo, rotulo_escopo),
+      `aria-label` = paste0(titulo, ": ", frase_ranking(posicao, total)),
+      title = tooltip_ranking(rotulo, posicao, total, escopo, contexto),
       ponto
     ),
     htmltools::tags$div(
       class = "perfil-rankings__extremos",
-      htmltools::tags$span("pior"),
-      htmltools::tags$span("melhor")
+      htmltools::tags$span("menor VIDA"),
+      htmltools::tags$span("maior VIDA")
     )
   )
 }
@@ -282,10 +335,11 @@ perfil_ranking_item <- function(rotulo, posicao, total, classe, escopo = NULL,
 #' Definindo uma função que monta os rankings do município
 #'
 #' @param resumo Lista retornada por resumo_municipio().
+#' @param contexto Texto com o município e o ano (opcional).
 #' @return Elemento HTML com os rankings da macrorregião, da UF e do Brasil.
 #' Usada em: perfil_palco().
 #' @noRd
-perfil_rankings <- function(resumo) {
+perfil_rankings <- function(resumo, contexto = NULL) {
   ## Obs.: este bloco usa funções auxiliares de fct_dados e fct_perfil.
   htmltools::tags$div(
     class = "perfil-rankings",
@@ -296,7 +350,7 @@ perfil_rankings <- function(resumo) {
       resumo$total_macro,
       "perfil-rankings__item--macro",
       escopo = resumo$macro_r_saude,
-      rotulo_escopo = "Macrorregião"
+      contexto = contexto
     ),
     # Ranking estadual ao centro do palco
     perfil_ranking_item(
@@ -305,14 +359,15 @@ perfil_rankings <- function(resumo) {
       resumo$total_uf,
       "perfil-rankings__item--uf",
       escopo = resumo$uf,
-      rotulo_escopo = "UF"
+      contexto = contexto
     ),
     # Ranking nacional à direita do palco
     perfil_ranking_item(
       "No Brasil",
       resumo$pos_nac,
       resumo$total_nac,
-      "perfil-rankings__item--brasil"
+      "perfil-rankings__item--brasil",
+      contexto = contexto
     )
   )
 }
@@ -320,10 +375,11 @@ perfil_rankings <- function(resumo) {
 #' Definindo uma função que monta as barras do resultado por bloco
 #'
 #' @param blocos Data frame com nome, valor e cor dos blocos.
+#' @param contexto Texto com o município e o ano (opcional).
 #' @return Elemento HTML com o título e uma barra preenchida por bloco.
 #' Usada em: perfil_palco() (visão sem comparação).
 #' @noRd
-grafico_barras_blocos <- function(blocos) {
+grafico_barras_blocos <- function(blocos, contexto = NULL) {
   ## Obs.: este bloco usa funções auxiliares de fct_dados, fct_cores e fct_petalas.
   # Garantindo os nomes, as cores e as medidas dos blocos
   blocos$nome <- as.character(blocos$nome)
@@ -371,7 +427,8 @@ grafico_barras_blocos <- function(blocos) {
         # Reaproveitando a tooltip das pétalas apenas na área da barra
         title = tooltip_petala(
           blocos$nome[i], blocos$valor[i], blocos$categoria[i],
-          blocos$pos_nac[i], blocos$total_nac[i], blocos$medida[i]
+          blocos$pos_nac[i], blocos$total_nac[i], blocos$medida[i],
+          contexto = contexto
         ),
         htmltools::tags$span(
           class = "resultado-blocos__preenchimento",
@@ -457,10 +514,13 @@ perfil_palco <- function(municipio, resumo, ano,
       "O contorno pontilhado mostra o tamanho máximo que a pétala poderia ter (100)."
     )
 
+    # Montando o rodapé discreto das tooltips com o município e o ano
+    contexto <- paste0(
+      resumo$municipio, " (", resumo$sigla_uf, ") · ", ano
+    )
+
     htmltools::tagList(
-      perfil_indice(resumo, ano),
-      # Mostrando os rankings logo abaixo do valor do índice
-      perfil_rankings(resumo),
+      perfil_indice(resumo, ano, contexto = contexto),
       # Nomeando a linha com o leque de pétalas e o resultado por bloco
       htmltools::tags$div(
         class = "perfil-palco__cabecalho",
@@ -488,16 +548,18 @@ perfil_palco <- function(municipio, resumo, ano,
         # Desenhando o leque de pétalas dos seis blocos
         htmltools::tags$div(
           class = "perfil-palco__coluna",
-          grafico_petalas(resumo$blocos)
+          grafico_petalas(resumo$blocos, contexto = contexto)
         ),
         # Mostrando o resultado detalhado por bloco apenas na visão isolada
         if (!comparado && !comparacao_ativa) {
           htmltools::tags$div(
             class = "perfil-palco__coluna perfil-palco__coluna--barras",
-            grafico_barras_blocos(resumo$blocos)
+            grafico_barras_blocos(resumo$blocos, contexto = contexto)
           )
         }
-      )
+      ),
+      # Mostrando os rankings na base do palco, abaixo dos gráficos
+      perfil_rankings(resumo, contexto = contexto)
     )
   }
 

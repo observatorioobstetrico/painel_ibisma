@@ -181,13 +181,16 @@ test_that("o resumo do município alimenta o palco com índice, rankings e bloco
       # O placar mostra o valor e a categoria do índice final
       expect_true(grepl(formatar_numero(linha$valor), palco, fixed = TRUE))
       expect_true(grepl(as.character(linha$categoria), palco, fixed = TRUE))
-      # Os três rankings aparecem com as posições e os totais da tabela do ano
-      expect_true(grepl(formatar_inteiro(linha$pos_macro), palco, fixed = TRUE))
-      expect_true(grepl(paste0("de ", formatar_inteiro(linha$total_macro)), palco, fixed = TRUE))
-      expect_true(grepl(formatar_inteiro(linha$pos_uf), palco, fixed = TRUE))
-      expect_true(grepl(paste0("de ", formatar_inteiro(linha$total_uf)), palco, fixed = TRUE))
-      expect_true(grepl(formatar_inteiro(linha$pos_nac), palco, fixed = TRUE))
-      expect_true(grepl(paste0("de ", formatar_inteiro(linha$total_nac)), palco, fixed = TRUE))
+      # Os três rankings aparecem com a leitura da posição na tabela do ano
+      partes_macro <- partes_ranking(linha$pos_macro, linha$total_macro)
+      partes_uf <- partes_ranking(linha$pos_uf, linha$total_uf)
+      partes_nac <- partes_ranking(linha$pos_nac, linha$total_nac)
+      expect_true(grepl(partes_macro$destaque, palco, fixed = TRUE))
+      expect_true(grepl(partes_macro$complemento, palco, fixed = TRUE))
+      expect_true(grepl(partes_uf$destaque, palco, fixed = TRUE))
+      expect_true(grepl(partes_uf$complemento, palco, fixed = TRUE))
+      expect_true(grepl(partes_nac$destaque, palco, fixed = TRUE))
+      expect_true(grepl(partes_nac$complemento, palco, fixed = TRUE))
 
       # Os seis blocos da pétala vêm na ordem configurada e com o valor real
       for (i in seq_len(nrow(BLOCOS))) {
@@ -581,28 +584,43 @@ test_that("formatadores usam a convenção brasileira", {
 })
 
 test_that("frase_percentil mostra a parcela de municípios abaixo", {
-  expect_match(frase_percentil(99.96), "Superior a 100,0%", fixed = TRUE)
-  expect_match(frase_percentil(100), "Superior a 100,0%", fixed = TRUE)
-  expect_match(frase_percentil(50), "Superior a 50,0%", fixed = TRUE)
-  expect_match(frase_percentil(40), "Superior a 40,0%", fixed = TRUE)
+  expect_match(
+    frase_percentil(99.96),
+    "Maior VIDA que 100,0% dos municípios brasileiros",
+    fixed = TRUE
+  )
+  expect_match(
+    frase_percentil(50),
+    "Maior VIDA que 50,0% dos municípios brasileiros",
+    fixed = TRUE
+  )
+  expect_match(
+    frase_percentil(40),
+    "Maior VIDA que 40,0% dos municípios brasileiros",
+    fixed = TRUE
+  )
   expect_match(frase_percentil(NA), "Sem dado")
 })
 
 test_that("frase_percentil destaca o melhor e o pior município", {
-  # A posição 1 é o pior resultado e a maior prioridade de atenção
+  # A posição 1 é o menor VIDA do ranking
   expect_match(
     frase_percentil(0, pos_nac = 1, total_nac = 5570),
-    "Pior resultado entre os 5.570 municípios",
+    "Menor VIDA entre todos os municípios brasileiros",
     fixed = TRUE
   )
-  # A última posição é o melhor resultado do ranking
+  # A última posição é o maior VIDA do ranking
   expect_match(
     frase_percentil(100, pos_nac = 5570, total_nac = 5570),
-    "Melhor resultado entre os 5.570 municípios",
+    "Maior VIDA entre todos os municípios brasileiros",
     fixed = TRUE
   )
   # As posições intermediárias mantêm a leitura do percentil
-  expect_match(frase_percentil(50, pos_nac = 3000, total_nac = 5570), "50,0%")
+  expect_match(
+    frase_percentil(50, pos_nac = 3000, total_nac = 5570),
+    "Maior VIDA que 50,0% dos municípios brasileiros",
+    fixed = TRUE
+  )
 })
 
 test_that("posicao_trilho distribui a posição do pior ao melhor", {
@@ -612,6 +630,15 @@ test_that("posicao_trilho distribui a posição do pior ao melhor", {
   # Com um único município, o ponto fica no extremo do melhor
   expect_equal(posicao_trilho(1, 1), 100)
   expect_equal(posicao_trilho(NA, 100), 100)
+})
+
+test_that("frase_ranking descreve a posição no ranking", {
+  expect_equal(frase_ranking(1, 21), "Menor VIDA entre 21 municípios")
+  expect_equal(frase_ranking(21, 21), "Maior VIDA entre 21 municípios")
+  expect_equal(frase_ranking(12, 21), "12ª menor VIDA entre 21 municípios")
+  # O plural se ajusta quando o escopo tem um único município
+  expect_equal(frase_ranking(1, 1), "Menor VIDA entre 1 município")
+  expect_equal(frase_ranking(NA, 21), "Sem dados")
 })
 
 test_that("regua_indice monta as cinco categorias e o marcador", {
@@ -624,6 +651,30 @@ test_that("regua_indice monta as cinco categorias e o marcador", {
   expect_true(grepl("left:27.8%;", html, fixed = TRUE))
   expect_true(grepl("0 · muito baixo", html, fixed = TRUE))
   expect_true(grepl("100 · muito alto", html, fixed = TRUE))
+})
+
+test_that("tooltip_indice reúne valor, categoria e leitura do percentil", {
+  resumo <- list(
+    valor = 27.8, categoria = "Baixo",
+    pos_nac = 3000, total_nac = 5570
+  )
+  html <- tooltip_indice(resumo)
+  expect_true(grepl("Índice VIDAS", html, fixed = TRUE))
+  expect_true(grepl("27,8", html, fixed = TRUE))
+  expect_true(grepl("Baixo", html, fixed = TRUE))
+  expect_true(grepl(
+    "Maior VIDA que 27,8% dos municípios brasileiros",
+    html,
+    fixed = TRUE
+  ))
+})
+
+test_that("contexto_tooltip monta o rodapé discreto", {
+  expect_equal(contexto_tooltip(NULL), "")
+  expect_equal(contexto_tooltip(""), "")
+  html <- contexto_tooltip("Jutaí (AM) · 2024")
+  expect_true(grepl("tooltip-petala__contexto", html, fixed = TRUE))
+  expect_true(grepl("Jutaí (AM) · 2024", html, fixed = TRUE))
 })
 
 test_that("grafico_barras_blocos preenche o valor e deixa o restante em cinza", {
@@ -1551,16 +1602,23 @@ test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
   expect_true(grepl(paste0("Índice VIDAS em ", ano), html, fixed = TRUE))
   expect_true(grepl("perfil-indice", html, fixed = TRUE))
   expect_true(grepl("perfil-rankings", html, fixed = TRUE))
-  # A régua do índice fica no tooltip da chip de categoria
-  expect_true(grepl("perfil-indice__chip", html, fixed = TRUE))
-  expect_true(grepl('data-tooltip-gatilho="hover focus click"', html, fixed = TRUE))
-  expect_true(grepl("data-tooltip-larga", html, fixed = TRUE))
+  # A régua do índice fica logo abaixo da frase de leitura
   expect_true(grepl("perfil-indice__regua", html, fixed = TRUE))
   expect_true(grepl("0 · muito baixo", html, fixed = TRUE))
   expect_true(grepl("100 · muito alto", html, fixed = TRUE))
-  # O município padrão é o de pior resultado e recebe o texto especial
+  # A régua é interativa e carrega a leitura do índice no tooltip
+  regua_tag <- regmatches(
+    html,
+    regexpr('<div class="perfil-indice__regua"[^>]*>', html, perl = TRUE)
+  )[[1]]
+  expect_true(grepl('data-bs-toggle="tooltip"', regua_tag, fixed = TRUE))
+  expect_true(grepl('tabindex="0"', regua_tag, fixed = TRUE))
+  expect_true(grepl("Índice VIDAS", regua_tag, fixed = TRUE))
+  # O município e o ano aparecem no topo de todas as tooltips do palco
+  expect_true(grepl("Jutaí (AM) · 2024", html, fixed = TRUE))
+  # O município padrão é o de menor VIDA e recebe o texto especial
   expect_equal(linha$pos_nac, 1L)
-  expect_true(grepl("Pior resultado entre os", html, fixed = TRUE))
+  expect_true(grepl("Menor VIDA entre todos os municípios brasileiros", html, fixed = TRUE))
   # A linha dos gráficos é nomeada uma única vez, antes das pétalas e das barras
   expect_true(grepl("perfil-palco__titulo", html, fixed = TRUE))
   expect_true(grepl("Resultado por bloco", html, fixed = TRUE))
@@ -1574,7 +1632,7 @@ test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
   expect_true(grepl("Na macrorregião", html, fixed = TRUE))
   expect_true(grepl("Na UF", html, fixed = TRUE))
   expect_true(grepl("No Brasil", html, fixed = TRUE))
-  # Os rankings ganham trilhos com os extremos pior e melhor
+  # Os rankings ganham trilhos com os extremos menor e maior VIDA
   expect_equal(
     lengths(regmatches(html, gregexpr("perfil-rankings__trilho", html, fixed = TRUE))),
     3
@@ -1583,8 +1641,14 @@ test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
     lengths(regmatches(html, gregexpr("perfil-rankings__extremos", html, fixed = TRUE))),
     3
   )
-  # O ranking estadual não repete o nome da UF no título
-  expect_false(grepl("Na UF (", html, fixed = TRUE))
+  expect_equal(
+    lengths(regmatches(html, gregexpr("menor VIDA", html, fixed = TRUE))),
+    3
+  )
+  expect_equal(
+    lengths(regmatches(html, gregexpr("maior VIDA", html, fixed = TRUE))),
+    3
+  )
   # Os valores territoriais guardam o texto completo para o tooltip condicional
   expect_true(grepl("metrica-tooltip", html, fixed = TRUE))
   expect_true(grepl("data-tooltip-texto", html, fixed = TRUE))
@@ -1621,15 +1685,22 @@ test_that("perfil_rankings monta trilhos interativos com tooltip", {
     lengths(regmatches(html, gregexpr('tabindex="0"', html, fixed = TRUE))),
     3
   )
-  # A tooltip mostra a posição e o escopo de cada ranking
-  expect_true(grepl("1º de 21", html, fixed = TRUE))
-  expect_true(grepl("1º de 62", html, fixed = TRUE))
-  expect_true(grepl("1º de 5.570", html, fixed = TRUE))
-  expect_true(grepl("Macrorregião", html, fixed = TRUE))
-  expect_true(grepl("OESTE", html, fixed = TRUE))
-  expect_true(grepl("UF", html, fixed = TRUE))
-  expect_true(grepl("Amazonas", html, fixed = TRUE))
+  # As tooltips identificam o território no título e leem a posição
+  expect_true(grepl("Na macrorregião (OESTE)", html, fixed = TRUE))
+  expect_true(grepl("Na UF (Amazonas)", html, fixed = TRUE))
+  expect_true(grepl("Menor VIDA", html, fixed = TRUE))
+  expect_true(grepl("entre 21 municípios", html, fixed = TRUE))
+  expect_true(grepl("entre 62 municípios", html, fixed = TRUE))
+  expect_true(grepl("entre 5.570 municípios", html, fixed = TRUE))
+  expect_false(grepl("1º de", html, fixed = TRUE))
   expect_false(grepl("Escopo", html, fixed = TRUE))
+  expect_false(grepl("Ranking", html, fixed = TRUE))
+  # Apenas o começo da leitura fica em negrito
+  expect_true(grepl(
+    "<strong>12ª menor VIDA</strong> entre 21 municípios",
+    tooltip_ranking("Na UF", 12, 21, "São Paulo"),
+    fixed = TRUE
+  ))
 })
 
 test_that("perfil_palco mostra estado vazio quando não há dado no ano", {
