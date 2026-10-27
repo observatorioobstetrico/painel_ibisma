@@ -583,6 +583,8 @@ test_that("os títulos da evolução ficam só com o texto, sem bolinha de cor",
   # A bolinha colorida e a variável de cor dela saíram dos cartões
   expect_false(grepl("evolucao-card__ponto", grade, fixed = TRUE))
   expect_false(grepl("--cor-medida", grade, fixed = TRUE))
+  # O título dos blocos fica agrupado com a identificação dos municípios
+  expect_true(grepl("evolucao-grade__cabecalho", grade, fixed = TRUE))
 })
 
 test_that("formatadores usam a convenção brasileira", {
@@ -1863,6 +1865,13 @@ test_that("esqueletos preservam a estrutura de cada output", {
   expect_equal(
     lengths(regmatches(evolucao, gregexpr("esqueleto__barra--rotulo", evolucao))),
     7 * MARCACOES_EIXO
+  )
+  # O grupo do título reserva também a barra da identificação dos municípios
+  expect_true(grepl("evolucao-grade__cabecalho", evolucao, fixed = TRUE))
+  expect_true(grepl("Dimensões do Índice VIDAS", evolucao, fixed = TRUE))
+  expect_equal(
+    lengths(regmatches(evolucao, gregexpr("esqueleto--identificacao", evolucao, fixed = TRUE))),
+    1
   )
 
   # O slot empilha o output e o esqueleto para o CSS exibir durante a carga

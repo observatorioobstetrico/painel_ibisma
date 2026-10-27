@@ -1579,13 +1579,21 @@ input:focus-visible,
   font-size: var(--fonte-muito-grande-size);
 }
 
+/* Agrupando o título dos blocos com a identificação logo abaixo */
+.evolucao-grade__cabecalho {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.5rem;
+}
+
 /* Abrindo a seção dos blocos dentro da grade */
 .evolucao-grade__titulo {
-  grid-column: 1 / -1;
   font-size: var(--fonte-muito-grande-size);
   font-weight: 600;
   color: var(--cor-azul-escuro);
-  margin: 0.5rem 0 0 0;
+  margin: 0;
 }
 
 /* Identificando os municípios exibidos logo abaixo da descrição */
@@ -1599,9 +1607,9 @@ input:focus-visible,
   line-height: 1.2;
 }
 
-/* Ocupando a linha inteira da grade quando fica abaixo do título dos blocos */
-.evolucao-identificacao--blocos {
-  grid-column: 1 / -1;
+/* Anulando o respiro da identificação, agora definido pelo grupo do título */
+.evolucao-grade__cabecalho .evolucao-identificacao {
+  margin: 0;
 }
 
 /* Mostrando cada município com o traço e a bolinha usados no próprio gráfico */
@@ -1683,6 +1691,13 @@ input:focus-visible,
 /* Reservando o espaço da identificação abaixo do seletor de bloco */
 .painel-bloco--indicadores .esqueleto-slot--identificacao .evolucao-identificacao {
   margin-bottom: 0.9rem;
+}
+
+/* Repetindo no esqueleto a mesma altura e o mesmo respiro do nome real */
+.painel-bloco--indicadores .esqueleto-slot--identificacao .esqueleto--identificacao {
+  height: 1.2em;
+  margin-bottom: 0.9rem;
+  font-size: var(--fonte-grande-size);
 }
 
 /* Desmontando os botões agrupados do radioGroupButtons em botões soltos */
@@ -2432,6 +2447,14 @@ html.pagina-carregada .esqueleto-slot > .esqueleto {
   max-width: 90%;
   height: 1.1em;
   border-radius: 6px;
+}
+
+/* Encaixando a barra da identificação no grupo do título da grade */
+.evolucao-grade__cabecalho .esqueleto--identificacao {
+  align-self: start;
+  height: 1.2em;
+  margin-top: 0;
+  font-size: var(--fonte-grande-size);
 }
 
 /* Reservando a mesma área desenhada pelos gráficos de evolução */

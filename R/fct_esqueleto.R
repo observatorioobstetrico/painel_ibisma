@@ -578,9 +578,15 @@ esqueleto_grade_evolucao <- function() {
     class = "evolucao-grade esqueleto esqueleto--grade-evolucao",
     `aria-hidden` = "true",
     cartao("evolucao-card--vidas", ALTURA_GRAFICO_VIDAS),
-    htmltools::tags$h4(
-      class = "evolucao-grade__titulo",
-      esqueleto_barra("9rem", "0.55em")
+    # Reproduzindo o grupo do título com a identificação dos municípios
+    htmltools::tags$div(
+      class = "evolucao-grade__cabecalho",
+      # Mostrando o título fixo da seção também durante o carregamento
+      htmltools::tags$h4(
+        class = "evolucao-grade__titulo",
+        "Dimensões do Índice VIDAS"
+      ),
+      esqueleto_identificacao()
     ),
     lapply(seq_len(nrow(BLOCOS)), function(i) {
       cartao("esqueleto--bloco", ALTURA_GRAFICO_BLOCO)

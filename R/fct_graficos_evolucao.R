@@ -597,12 +597,16 @@ grade_evolucao_ui <- function(ns) {
     class = "evolucao-grade",
     # Destacando o Índice VIDAS em um cartão de largura total
     cartao("indice_final", ALTURA_GRAFICO_VIDAS, "evolucao-card--vidas"),
-    # Organizando os seis blocos em pequenos múltiplos
-    htmltools::tags$h4(class = "evolucao-grade__titulo", "Dimensões do Índice VIDAS"),
-    # Identificando os municípios logo abaixo do título dos blocos
+    # Agrupando o título e a identificação para manter o respiro curto entre eles
     htmltools::tags$div(
-      class = "evolucao-identificacao--blocos",
-      shiny::uiOutput(ns("evolucao_identificacao_blocos"))
+      class = "evolucao-grade__cabecalho",
+      # Organizando os seis blocos em pequenos múltiplos
+      htmltools::tags$h4(class = "evolucao-grade__titulo", "Dimensões do Índice VIDAS"),
+      # Identificando os municípios logo abaixo do título dos blocos
+      htmltools::tags$div(
+        class = "evolucao-identificacao--blocos",
+        shiny::uiOutput(ns("evolucao_identificacao_blocos"))
+      )
     ),
     lapply(seq_len(nrow(BLOCOS)), function(i) {
       cartao(BLOCOS$medida[i], ALTURA_GRAFICO_BLOCO)
