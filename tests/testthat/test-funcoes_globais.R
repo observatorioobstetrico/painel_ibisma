@@ -172,7 +172,11 @@ test_that("o resumo do município alimenta o palco com índice, rankings e bloco
   municipio <- shiny::reactiveVal(cod)
   shiny::testServer(
     mod_como_server,
-    args = list(dados = dados, municipio = municipio),
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
     {
       session$setInputs(ano = as.character(ano_ref))
       # Convertendo a árvore de tags do palco em um texto único para conferir
@@ -221,7 +225,11 @@ test_that("o palco fica vazio quando o município não tem dado no ano", {
   municipio <- shiny::reactiveVal(lacuna$codmunres)
   shiny::testServer(
     mod_como_server,
-    args = list(dados = dados, municipio = municipio),
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
     {
       session$setInputs(ano = as.character(lacuna$ano))
       # Sem resumo no ano, o palco cai no estado vazio no lugar do perfil
@@ -459,7 +467,11 @@ test_that("a evolução usa limites de eixo por grupo de medidas", {
   municipio <- shiny::reactiveVal(principal)
   shiny::testServer(
     mod_como_server,
-    args = list(dados = dados, municipio = municipio),
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
     {
       session$setInputs(
         municipio = as.character(principal),
@@ -567,7 +579,7 @@ test_that("os títulos da evolução ficam só com o texto, sem bolinha de cor",
   grade <- as.character(grade_evolucao_ui(shiny::NS("como")))
   # Os sete títulos continuam na grade, apenas como texto
   expect_true(grepl("Índice VIDAS", grade, fixed = TRUE))
-  expect_true(grepl("Blocos do Índice VIDAS", grade, fixed = TRUE))
+  expect_true(grepl("Dimensões do Índice VIDAS", grade, fixed = TRUE))
   # A bolinha colorida e a variável de cor dela saíram dos cartões
   expect_false(grepl("evolucao-card__ponto", grade, fixed = TRUE))
   expect_false(grepl("--cor-medida", grade, fixed = TRUE))
@@ -577,7 +589,7 @@ test_that("formatadores usam a convenção brasileira", {
   expect_equal(formatar_numero(12.345), "12,3")
   expect_equal(formatar_numero(c(1.5, NA)), c("1,5", "Sem dados"))
   expect_equal(formatar_inteiro(5570), "5.570")
-  expect_equal(rotulo_posicao(1234, 5570), "1.234º de 5.570")
+  expect_equal(rotulo_posicao(1234, 5570), "1.234 de 5.570")
   # Todos os valores do painel são exibidos com uma casa decimal
   expect_equal(formatar_numero(99.96), "100,0")
   expect_equal(formatar_numero(0.04), "0,0")
@@ -690,7 +702,7 @@ test_that("grafico_barras_blocos preenche o valor e deixa o restante em cinza", 
   )
   html <- as.character(grafico_barras_blocos(blocos))
   # As seis linhas de barra aparecem na ordem dos blocos, sem o título da linha
-  expect_false(grepl("Resultado por bloco", html, fixed = TRUE))
+  expect_false(grepl("Resultado por dimensão", html, fixed = TRUE))
   expect_false(grepl("resultado-blocos__ponto", html, fixed = TRUE))
   expect_equal(
     lengths(regmatches(html, gregexpr("resultado-blocos__linha", html, fixed = TRUE))),
@@ -706,7 +718,7 @@ test_that("grafico_barras_blocos preenche o valor e deixa o restante em cinza", 
     6
   )
   expect_true(grepl("tooltip-petala__marca", html, fixed = TRUE))
-  expect_true(grepl("Ranking", html, fixed = TRUE))
+  expect_true(grepl("Prioridade", html, fixed = TRUE))
   # O preenchimento usa a cor do bloco e a largura do valor
   expect_true(grepl("width:0.0%;background:#FAC80F", html, fixed = TRUE))
   expect_true(grepl("width:100.0%;background:#1E5AA0", html, fixed = TRUE))
@@ -741,8 +753,8 @@ test_that("paletas e cores seguem a configuração do projeto", {
 
 test_that("opções de medida, ano e escopo do ranking estão completas", {
   exigir_pipeline()
-  # As medidas do seletor são o dicionário central, com o prefixo "Bloco" nos rótulos
-  expect_equal(MEDIDAS$rotulo[-1], paste("Bloco", MEDIDAS$nome[-1]))
+  # As medidas do seletor são o dicionário central, com o prefixo "Dimensão" nos rótulos
+  expect_equal(MEDIDAS$rotulo[-1], paste("Dimensão", MEDIDAS$nome[-1]))
   expect_equal(dados_ibisma()$anos, sort(unique(indice_referencia$ano)))
 
   # Conferindo as opções do seletor de escopo embutidas na própria seção Onde?
@@ -761,12 +773,12 @@ test_that("opções de medida, ano e escopo do ranking estão completas", {
   expect_setequal(opcoes$value[-1], siglas_uf)
 })
 
-test_that("nome_medida prefixa os blocos com Bloco quando pedido", {
+test_that("nome_medida prefixa as dimensões com Dimensão quando pedido", {
   # O Índice VIDAS nunca recebe o prefixo
   expect_equal(nome_medida("indice_final", prefixo_bloco = TRUE), "Índice VIDAS")
   expect_equal(
     nome_medida("bloco2", prefixo_bloco = TRUE),
-    "Bloco Planejamento Reprodutivo"
+    "Dimensão Planejamento Reprodutivo"
   )
   # Sem o prefixo, os nomes continuam como configurados
   expect_equal(
@@ -844,7 +856,11 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
 
   shiny::testServer(
     mod_onde_server,
-    args = list(dados = dados, municipio = municipio),
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
     {
       # Lendo o destaque marcado já na montagem do widget (índice 0-based)
       destaque_do_render <- function() {
@@ -853,7 +869,7 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
       }
 
       session$setInputs(
-        ano = as.character(ano),
+        ano = as.character(ano()),
         medida = "indice_final",
         escopo = "nacional"
       )
@@ -871,7 +887,7 @@ test_that("o ranking marca o município em foco na montagem e mantém o foco", {
       session$flushReact()
       expect_equal(municipio(), outro)
 
-      base_bloco <- valores_ano(dados, ano, "bloco6")
+      base_bloco <- valores_ano(dados, ano(), "bloco6")
       ranking_bloco <- base_bloco[order(base_bloco$valor, decreasing = FALSE, na.last = TRUE), ]
       expect_equal(
         destaque_do_render(),
@@ -946,7 +962,11 @@ test_that("a descrição e a legenda acompanham a medida escolhida", {
   municipio <- shiny::reactiveVal(municipio_padrao(dados))
   shiny::testServer(
     mod_onde_server,
-    args = list(dados = dados, municipio = municipio),
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
     {
       session$setInputs(
         ano = as.character(max(dados$anos)),
@@ -961,9 +981,69 @@ test_that("a descrição e a legenda acompanham a medida escolhida", {
       # Trocando para um bloco, a descrição e a legenda acompanham a medida
       session$setInputs(medida = "bloco3")
       texto <- as.character(output$ranking_descricao$html)
-      expect_true(grepl("menor valor no Bloco Pré-natal", texto, fixed = TRUE))
+      expect_true(grepl("menor valor na Dimensão Pré-natal", texto, fixed = TRUE))
       legenda <- as.character(output$legenda$html)
-      expect_true(grepl("Nível do Bloco Pré-natal", legenda, fixed = TRUE))
+      expect_true(grepl("Nível da Dimensão Pré-natal", legenda, fixed = TRUE))
+    }
+  )
+})
+
+test_that("o ano compartilhado mantém os seletores sincronizados", {
+  dados <- dados_ibisma()
+  municipio <- shiny::reactiveVal(municipio_padrao(dados))
+  ano_outro <- min(dados$anos)
+  chamadas <- new.env(parent = emptyenv())
+  chamadas$anos <- character(0)
+
+  # Capturando as atualizações do seletor sem depender do cliente
+  testthat::local_mocked_bindings(
+    updateSlimSelect = function(session, inputId, selected = NULL, ...) {
+      if (identical(inputId, "ano")) {
+        chamadas$anos <- c(chamadas$anos, as.character(selected))
+      }
+      invisible(NULL)
+    },
+    .package = "shinyWidgets"
+  )
+
+  # Conferindo a sincronização no módulo Onde?
+  shiny::testServer(
+    mod_onde_server,
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
+    {
+      session$flushReact()
+      # O ano compartilhado chega ao seletor já na montagem
+      expect_true(as.character(max(dados$anos)) %in% chamadas$anos)
+      # A troca no seletor atualiza o estado compartilhado
+      session$setInputs(ano = as.character(ano_outro))
+      session$flushReact()
+      expect_equal(ano(), ano_outro)
+      expect_equal(tail(chamadas$anos, 1), as.character(ano_outro))
+    }
+  )
+
+  # Conferindo a sincronização no módulo Como?
+  chamadas$anos <- character(0)
+  shiny::testServer(
+    mod_como_server,
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
+    {
+      session$flushReact()
+      # O ano compartilhado chega ao seletor já na montagem
+      expect_true(as.character(max(dados$anos)) %in% chamadas$anos)
+      # A troca no seletor atualiza o estado compartilhado
+      session$setInputs(ano = as.character(ano_outro))
+      session$flushReact()
+      expect_equal(ano(), ano_outro)
+      expect_equal(tail(chamadas$anos, 1), as.character(ano_outro))
     }
   )
 })
@@ -1347,7 +1427,11 @@ test_that("o escopo do ranking aplica o destaque e o voo conforme a escolha", {
 
   shiny::testServer(
     mod_onde_server,
-    args = list(dados = dados, municipio = municipio),
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
     {
       session$setInputs(ano = "2024", medida = "indice_final", escopo = "nacional")
       session$flushReact()
@@ -1427,16 +1511,16 @@ test_that("tooltip da pétala carrega a cor da dimensão", {
   expect_true(grepl("tooltip-petala__marca", html, fixed = TRUE))
   expect_true(grepl(paste0("--cor-medida:", cor_medida("bloco3")), html, fixed = TRUE))
   expect_true(grepl(paste0("--cor-fundo:", cor_categoria("Médio", "bloco3")), html, fixed = TRUE))
-  # A tooltip nomeia a posição no ranking, sem falar em prioridade
-  expect_true(grepl("Ranking", html, fixed = TRUE))
-  expect_false(grepl("Prioridade", html, fixed = TRUE))
-  # A chip de categoria fica na linha do valor, antes do ranking
+  # A tooltip nomeia a posição como prioridade no escopo
+  expect_true(grepl("Prioridade", html, fixed = TRUE))
+  expect_false(grepl("Ranking", html, fixed = TRUE))
+  # A chip de categoria fica na linha do valor, antes da prioridade
   tooltip <- tooltip_petala("Social", 40.9, "Médio", 2279, 5570, "bloco1")
   pos_valor <- regexpr("Valor", tooltip, fixed = TRUE)[1]
   pos_chip <- regexpr("--cor-fundo:", tooltip, fixed = TRUE)[1]
-  pos_ranking <- regexpr("Ranking", tooltip, fixed = TRUE)[1]
+  pos_prioridade <- regexpr("Prioridade", tooltip, fixed = TRUE)[1]
   expect_true(pos_valor < pos_chip)
-  expect_true(pos_chip < pos_ranking)
+  expect_true(pos_chip < pos_prioridade)
   # Os nomes dos blocos ficam nas próprias pétalas, sem a legenda abaixo
   expect_true(grepl("rotulo-petala", html, fixed = TRUE))
   expect_false(grepl("petalas-legenda", html, fixed = TRUE))
@@ -1621,7 +1705,7 @@ test_that("perfil_palco monta identificação, índice, pétalas e rankings", {
   expect_true(grepl("Menor VIDA entre todos os municípios brasileiros", html, fixed = TRUE))
   # A linha dos gráficos é nomeada uma única vez, antes das pétalas e das barras
   expect_true(grepl("perfil-palco__titulo", html, fixed = TRUE))
-  expect_true(grepl("Resultado por bloco", html, fixed = TRUE))
+  expect_true(grepl("Resultado por dimensão", html, fixed = TRUE))
   # O botão de informação guarda a explicação das pétalas no tooltip
   expect_true(grepl("perfil-palco__info", html, fixed = TRUE))
   expect_true(grepl("No gráfico de pétalas, cada pétala representa", html, fixed = TRUE))
@@ -2019,7 +2103,11 @@ test_that("o módulo exibe os indicadores do bloco selecionado", {
   municipio <- shiny::reactiveVal(principal)
   shiny::testServer(
     mod_como_server,
-    args = list(dados = dados, municipio = municipio),
+    args = list(
+      dados = dados,
+      municipio = municipio,
+      ano = shiny::reactiveVal(max(dados$anos))
+    ),
     {
       session$setInputs(
         municipio = as.character(principal),

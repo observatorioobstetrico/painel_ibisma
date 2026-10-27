@@ -220,7 +220,7 @@ golem_add_external_resources <- function() {
     tags$meta(
       name = "description",
       content = paste0(
-        "Painel interativo do Índice VIDAS, com o índice e os seis blocos ",
+        "Painel interativo do Índice VIDAS, com o índice e as seis dimensões ",
         "que acompanham as condições de saúde das mulheres nos municípios brasileiros."
       )
     ),

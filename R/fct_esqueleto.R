@@ -194,7 +194,7 @@ esqueleto_ranking <- function(linhas = 12) {
   celulas <- function() {
     list(
       esqueleto_celula("45px", "14px", "14px", marca = "esqueleto__barra--circulo"),
-      esqueleto_celula("62px", "55%", celula = "esqueleto__celula--direita"),
+      esqueleto_celula("88px", "55%", celula = "esqueleto__celula--direita"),
       esqueleto_celula(NULL, "70%"),
       esqueleto_celula("54px", "60%"),
       esqueleto_celula("84px", "70%", celula = "esqueleto__celula--direita"),
@@ -204,7 +204,7 @@ esqueleto_ranking <- function(linhas = 12) {
   # Montando o cabeçalho com barras no lugar dos rótulos de cada coluna
   cabecalho <- list(
     esqueleto_celula("45px"),
-    esqueleto_celula("62px", "26px", "7px", celula = "esqueleto__celula--direita"),
+    esqueleto_celula("88px", "26px", "7px", celula = "esqueleto__celula--direita"),
     esqueleto_celula(NULL, "58px", "7px"),
     esqueleto_celula("54px", "16px", "7px"),
     esqueleto_celula("84px", "30px", "7px", celula = "esqueleto__celula--direita"),

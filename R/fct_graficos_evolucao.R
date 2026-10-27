@@ -598,7 +598,7 @@ grade_evolucao_ui <- function(ns) {
     # Destacando o Índice VIDAS em um cartão de largura total
     cartao("indice_final", ALTURA_GRAFICO_IBISMA, "evolucao-card--ibisma"),
     # Organizando os seis blocos em pequenos múltiplos
-    htmltools::tags$h4(class = "evolucao-grade__titulo", "Blocos do Índice VIDAS"),
+    htmltools::tags$h4(class = "evolucao-grade__titulo", "Dimensões do Índice VIDAS"),
     # Identificando os municípios logo abaixo do título dos blocos
     htmltools::tags$div(
       class = "evolucao-identificacao--blocos",

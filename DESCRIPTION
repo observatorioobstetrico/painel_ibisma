@@ -8,8 +8,8 @@ Authors@R:
            email = "your@email.com")
 Description: Painel interativo do Índice VIDAS - Vigilância dos
     Indicadores, Determinantes e Assistência à Saúde das Mulheres.
-    Apresenta a distribuição territorial do índice e de seus seis blocos,
-    o ranking dos municípios e o perfil municipal com evolução temporal e
+    Apresenta a distribuição territorial do índice e de suas seis dimensões,
+    a classificação dos municípios e o perfil municipal com evolução temporal e
     comparação entre municípios.
 License: What license is it under?
 Imports: 

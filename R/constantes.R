@@ -1,7 +1,7 @@
 # =============================================================================
 #   CONSTANTES DO PAINEL VIDAS
-#   Reúne o dicionário do índice (blocos, medidas e categorias), os níveis de
-#   análise geográfica e as rampas de cores do painel.
+#   Reúne o dicionário do índice (dimensões, medidas e categorias) e as
+#   rampas de cores do painel.
 #   Manter tudo aqui evita valores espalhados pelo código e facilita a evolução.
 # =============================================================================
 
@@ -79,7 +79,7 @@ PALETAS <- list(
 # Definindo as sete medidas na ordem canônica do painel
 # A ordem manda nas colunas das séries, nos sete gráficos e nos seletores
 # Os valores são percentis de VIDAS: quanto maior, melhores as condições do município
-# A coluna cor é a cor de identificação: tom central dos blocos e base do índice
+# A coluna cor é a cor de identificação: tom central das dimensões e base do índice
 ## Usada em: fct_dados.R (colunas das séries), fct_graficos_evolucao.R (sete cartões e eixos), fct_cores.R (cor_medida) e mod_como.R (laço dos gráficos).
 MEDIDAS <- data.frame(
   medida  = c(
@@ -102,12 +102,12 @@ MEDIDAS <- data.frame(
   ),
   rotulo  = c(
     "Índice VIDAS",
-    "Bloco Social",
-    "Bloco Planejamento Reprodutivo",
-    "Bloco Pré-natal",
-    "Bloco Parto",
-    "Bloco Sistema de Saúde",
-    "Bloco Clima"
+    "Dimensão Social",
+    "Dimensão Planejamento Reprodutivo",
+    "Dimensão Pré-natal",
+    "Dimensão Parto",
+    "Dimensão Sistema de Saúde",
+    "Dimensão Clima"
   ),
   cor     = c(
     COR_VIDAS,
@@ -121,7 +121,7 @@ MEDIDAS <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Definindo os seis blocos como o recorte das medidas sem o índice
+# Definindo as seis dimensões como o recorte das medidas sem o índice
 ## Usada em: mod_como.R (pétalas e eixos), fct_graficos_evolucao.R (grade da evolução) e fct_esqueleto.R (esqueleto da grade).
 BLOCOS <- MEDIDAS[MEDIDAS$medida != "indice_final", ]
 row.names(BLOCOS) <- NULL
@@ -130,7 +130,7 @@ row.names(BLOCOS) <- NULL
 #   DICIONÁRIO DOS INDICADORES
 # -----------------------------------------------------------------------------
 
-# Definindo os dezesseis indicadores brutos que compõem os seis blocos
+# Definindo os dezesseis indicadores brutos que compõem as seis dimensões
 # A coluna indicador é o nome da coluna nas séries históricas do painel;
 # a coluna codigo é o código usado no cálculo do índice (criar_indice_final.R);
 # a coluna nome é o nome oficial do indicador, exibido no título do cartão;
@@ -239,21 +239,5 @@ INDICADORES <- data.frame(
     TRUE,
     FALSE
   ),
-  stringsAsFactors = FALSE
-)
-
-# -----------------------------------------------------------------------------
-#   NÍVEIS DE ANÁLISE GEOGRÁFICA
-# -----------------------------------------------------------------------------
-
-# Definindo o nível de análise geográfica usado pela seção Onde?
-# Habilitando novos níveis ao acrescentar linhas com a variável geográfica do nível
-## Usada em: mod_onde.R (seletor de nível).
-NIVEIS_ANALISE <- data.frame(
-  id            = "municipio",
-  rotulo        = "municípios",
-  singular      = "município",
-  variavel_geo  = "codmunres",
-  disponivel    = TRUE,
   stringsAsFactors = FALSE
 )

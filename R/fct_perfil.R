@@ -509,8 +509,8 @@ perfil_palco <- function(municipio, resumo, ano,
 
     # Explicando as pétalas no botão de informação do título
     texto_petalas <- paste(
-      "No gráfico de pétalas, cada pétala representa um bloco do Índice VIDAS:",
-      "quanto maior a pétala, melhores as condições naquele bloco.",
+      "No gráfico de pétalas, cada pétala representa uma dimensão do Índice VIDAS:",
+      "quanto maior a pétala, melhores as condições naquela dimensão.",
       "O contorno pontilhado mostra o tamanho máximo que a pétala poderia ter (100)."
     )
 
@@ -521,12 +521,12 @@ perfil_palco <- function(municipio, resumo, ano,
 
     htmltools::tagList(
       perfil_indice(resumo, ano, contexto = contexto),
-      # Nomeando a linha com o leque de pétalas e o resultado por bloco
+      # Nomeando a linha com o leque de pétalas e o resultado por dimensão
       htmltools::tags$div(
         class = "perfil-palco__cabecalho",
         htmltools::tags$h4(
           class = "perfil-palco__titulo",
-          "Resultado por bloco"
+          "Resultado por dimensão"
         ),
         htmltools::tags$button(
           type = "button",

@@ -1,11 +1,11 @@
 # AGENTS.md — painel_ibisma
 
 Repositório voltado à construção de um painel de visualização para o Índice VIDAS - Vigilância dos
-Indicadores, Determinantes e Assistência à Saúde das Mulheres. O índice é composto por seis blocos/dimensões: Social; Planejamento
-Reprodutivo; Pré-natal; Parto; Sistema de Saúde; Clima. Cada bloco é composto por um conjunto de indicadores.
-Para o cálculo do índice final, foram definidos pesos tanto para os blocos quanto para os indicadores utilizando
+Indicadores, Determinantes e Assistência à Saúde das Mulheres. O índice é composto por seis dimensões: Social; Planejamento
+Reprodutivo; Pré-natal; Parto; Sistema de Saúde; Clima. Cada dimensão é composta por um conjunto de indicadores.
+Para o cálculo do índice final, foram definidos pesos tanto para as dimensões quanto para os indicadores utilizando
 Análise Fatorial. O índice varia entre 0 e 100, e seu valor representa o percentil de VIDAS, i.e., a posição do
-município em relação aos demais: quanto maior o valor, melhores as condições de saúde das mulheres. No ranking,
+município em relação aos demais: quanto maior o valor, melhores as condições de saúde das mulheres. Na classificação,
 a posição 1 indica o menor valor do índice, ou seja, a maior prioridade de atenção.
 
 ## Cores do projeto (Observatório Obstétrico Brasileiro)

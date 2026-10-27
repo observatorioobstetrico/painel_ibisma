@@ -177,7 +177,7 @@ nome_uf <- function(sigla) {
 #' Definindo uma função que obtém o nome de exibição de uma ou mais medidas
 #'
 #' @param medida Vetor de identificadores de medida ("indice_final", "bloco1"...).
-#' @param prefixo_bloco Se TRUE, usa o rótulo com o prefixo "Bloco".
+#' @param prefixo_bloco Se TRUE, usa o rótulo com o prefixo "Dimensão".
 #' @return Vetor de nomes legíveis, na mesma ordem da entrada.
 #' Usada em: fct_graficos_evolucao.R (títulos dos cartões), fct_mapa.R (tooltip do mapa),
 #' mod_como.R (resumo do município) e mod_onde.R (resumo do ranking).
@@ -225,9 +225,9 @@ formatar_inteiro <- function(x) {
 #'
 #' @param posicao Posição do município.
 #' @param total Número de municípios avaliados.
-#' @return Texto no formato "1.234º de 5.570".
+#' @return Texto no formato "1.234 de 5.570".
 #' Usada em: fct_perfil.R (placar) e fct_petalas.R (tooltip da pétala).
 #' @noRd
 rotulo_posicao <- function(posicao, total) {
-  paste0(formatar_inteiro(posicao), "º de ", formatar_inteiro(total))
+  paste0(formatar_inteiro(posicao), " de ", formatar_inteiro(total))
 }

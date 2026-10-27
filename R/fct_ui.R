@@ -29,7 +29,7 @@ titulo_secao <- function(titulo, descricao = NULL) {
 #' @param largura Largura do seletor (mínima).
 #' @param busca Habilita o campo de busca dentro do dropdown.
 #' @return Elemento HTML do seletor estilizado.
-#' Usada em: mod_onde.R (medida, nível, ano e escopo) e mod_como.R (município, ano e comparação).
+#' Usada em: mod_onde.R (medida, ano e escopo) e mod_como.R (município, ano e comparação).
 #' @noRd
 seletor_inline <- function(input_id, choices, selected = NULL, largura = "auto",
                            busca = TRUE) {

@@ -81,7 +81,7 @@ mod_como_ui <- function(id) {
           htmltools::tags$p(
             class = "bloco-descricao",
             paste(
-              "Acompanhe a evolução do Índice VIDAS e de seus seis blocos entre 2015 e 2024."
+              "Acompanhe a evolução do Índice VIDAS e de suas seis dimensões entre 2015 e 2024."
             )
           ),
           # Identificando os municípios e o período exibidos nos gráficos
@@ -105,11 +105,11 @@ mod_como_ui <- function(id) {
           class = "painel-bloco painel-bloco--indicadores",
           htmltools::tags$div(
             class = "bloco-cabecalho",
-            htmltools::tags$h3(class = "bloco-titulo", "Os indicadores por trás de cada bloco"),
+            htmltools::tags$h3(class = "bloco-titulo", "Os indicadores por trás de cada dimensão"),
             htmltools::tags$p(
               class = "bloco-descricao",
               paste(
-                "Escolha um bloco para ver os indicadores que o compõem",
+                "Escolha uma dimensão para ver os indicadores que a compõem",
                 "e como cada um mudou ao longo do tempo."
               )
             )
@@ -148,11 +148,32 @@ mod_como_ui <- function(id) {
 #' @param id Identificador do módulo.
 #' @param dados Lista lida por dados_ibisma().
 #' @param municipio Reativo compartilhado com o município selecionado.
+#' @param ano Reativo compartilhado com o ano selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.
 #' @noRd
-mod_como_server <- function(id, dados, municipio) {
+mod_como_server <- function(id, dados, municipio, ano) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    # Mantendo o seletor de ano sincronizado com o restante do painel
+    shiny::observeEvent(ano(), {
+      selecionado <- ano()
+      if (!is.null(selecionado) && !is.na(selecionado)) {
+        shinyWidgets::updateSlimSelect(
+          session = session,
+          inputId = "ano",
+          selected = as.character(selecionado)
+        )
+      }
+    }, ignoreInit = FALSE)
+
+    # Registrando a troca de ano feita no próprio seletor
+    shiny::observeEvent(input$ano, {
+      novo <- suppressWarnings(as.integer(input$ano))
+      if (!is.na(novo) && !identical(novo, ano())) {
+        ano(novo)
+      }
+    })
 
     # Mantendo o seletor do perfil sincronizado com o restante do painel
     shiny::observeEvent(municipio(), {
@@ -175,9 +196,6 @@ mod_como_server <- function(id, dados, municipio) {
       }
     })
 
-    # Convertendo o ano escolhido no controle para número
-    ano <- shiny::reactive(as.integer(input$ano))
-
     # Obtendo os dados territoriais do município selecionado
     info <- shiny::reactive({
       dados$municipios[dados$municipios$codmunres == municipio(), ][1, ]
@@ -185,10 +203,10 @@ mod_como_server <- function(id, dados, municipio) {
 
     # Definindo uma função que monta o resumo completo de um município em um ano
     # Usada em: mod_como.R (palcos principal e comparado).
-    resumo_municipio <- function(codmunres, ano) {
+    resumo_municipio <- function(codmunres, ano_ref) {
       ## Obs.: este bloco usa funções auxiliares de fct_dados e fct_cores.
       # Reunindo as linhas do município em todas as medidas do ano
-      tabela <- tabela_ano(dados, ano)
+      tabela <- tabela_ano(dados, ano_ref)
       linhas <- tabela[tabela$codmunres == codmunres, ]
 
       # Identificando o município a partir das próprias linhas

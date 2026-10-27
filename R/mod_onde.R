@@ -1,7 +1,7 @@
 # =============================================================================
 #   MÓDULO ONDE?
 #   Reúne o mapa e o ranking em uma única experiência: os dois blocos
-#   compartilham os controles de medida, nível e ano, e a seleção de município
+#   compartilham os controles de medida e ano, e a seleção de município
 #   circula entre o mapa, o ranking e o perfil.
 # =============================================================================
 
@@ -13,11 +13,8 @@
 mod_onde_ui <- function(id) {
   ns <- shiny::NS(id)
 
-  # Montando as opções de medida com o prefixo "Bloco" para leitura natural
+  # Montando as opções de medida com o prefixo "Dimensão" para leitura natural
   medidas <- stats::setNames(MEDIDAS$medida, MEDIDAS$rotulo)
-
-  # Montando as opções de nível de análise a partir da configuração central
-  niveis <- stats::setNames(NIVEIS_ANALISE$id, NIVEIS_ANALISE$rotulo)
 
   # Montando as opções de ano em ordem decrescente
   anos_ordem <- rev(dados_ibisma()$anos)
@@ -53,9 +50,7 @@ mod_onde_ui <- function(id) {
           ns("medida"), medidas, selected = "indice_final",
           largura = "300px", busca = FALSE
         ),
-        htmltools::tags$span(class = "controle-texto", "dos"),
-        seletor_inline(ns("nivel"), niveis, selected = "municipio", busca = FALSE),
-        htmltools::tags$span(class = "controle-texto", "em"),
+        htmltools::tags$span(class = "controle-texto", "dos municípios em"),
         seletor_inline(ns("ano"), anos, selected = max(dados_ibisma()$anos))
       ),
       # Organizando mapa e ranking lado a lado no desktop
@@ -93,7 +88,7 @@ mod_onde_ui <- function(id) {
           class = "painel-bloco painel-bloco--ranking",
           htmltools::tags$div(
             class = "bloco-cabecalho",
-            htmltools::tags$h3(class = "bloco-titulo", "Ranking dos municípios"),
+            htmltools::tags$h3(class = "bloco-titulo", "Municípios por prioridade de atenção"),
             # Explicando a primeira posição; o texto padrão só muda quando há bloco
             htmltools::tags$div(
               class = "ranking-descricao",
@@ -110,7 +105,7 @@ mod_onde_ui <- function(id) {
           # Controle de escopo do ranking (Brasil ou uma UF)
           htmltools::tags$div(
             class = "controles-inline",
-            htmltools::tags$span(class = "controle-texto", "Ranking para"),
+            htmltools::tags$span(class = "controle-texto", "Classificação para"),
             seletor_inline(ns("escopo"), escopos, selected = "nacional")
           ),
           # Resumindo o total de municípios, o ano e a medida logo acima da tabela
@@ -136,16 +131,37 @@ mod_onde_ui <- function(id) {
 #' @param id Identificador do módulo.
 #' @param dados Lista lida por dados_ibisma().
 #' @param municipio Reativo compartilhado com o município selecionado.
+#' @param ano Reativo compartilhado com o ano selecionado.
 #' @return Nada; registra os outputs e observadores do módulo.
 #' @noRd
-mod_onde_server <- function(id, dados, municipio) {
+mod_onde_server <- function(id, dados, municipio, ano) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    # Mantendo o seletor de ano sincronizado com o restante do painel
+    shiny::observeEvent(ano(), {
+      selecionado <- ano()
+      if (!is.null(selecionado) && !is.na(selecionado)) {
+        shinyWidgets::updateSlimSelect(
+          session = session,
+          inputId = "ano",
+          selected = as.character(selecionado)
+        )
+      }
+    }, ignoreInit = FALSE)
+
+    # Registrando a troca de ano feita no próprio seletor
+    shiny::observeEvent(input$ano, {
+      novo <- suppressWarnings(as.integer(input$ano))
+      if (!is.na(novo) && !identical(novo, ano())) {
+        ano(novo)
+      }
+    })
 
     ## Obs.: este bloco usa funções auxiliares de fct_mapa.
     # Calculando os dados do mapa para a medida e o ano selecionados
     base_mapa <- shiny::reactive({
-      dados_mapa(dados, as.integer(input$ano), input$medida)
+      dados_mapa(dados, ano(), input$medida)
     })
 
     # ----- Mapa -----
@@ -181,7 +197,7 @@ mod_onde_server <- function(id, dados, municipio) {
     })
 
     # Atualizando cores e tooltips do mapa quando muda o ano ou a medida
-    shiny::observeEvent(list(input$ano, input$medida), {
+    shiny::observeEvent(list(ano(), input$medida), {
       atualizar_municipios(session, ns("mapa"), base_mapa(), input$medida)
     }, ignoreInit = TRUE)
 
@@ -243,11 +259,13 @@ mod_onde_server <- function(id, dados, municipio) {
     # Recriando a legenda sempre que a medida exibida mudar
     output$legenda <- shiny::renderUI({
       medida <- if (is.null(input$medida)) "indice_final" else input$medida
+      # Ajustando o artigo ao gênero da medida exibida
+      rotulo <- nome_medida(medida, prefixo_bloco = TRUE)
       legenda_categorias(
         paleta = PALETAS[[medida]],
         titulo = paste0(
-          "Nível do ",
-          nome_medida(medida, prefixo_bloco = TRUE)
+          if (identical(medida, "indice_final")) "Nível do " else "Nível da ",
+          rotulo
         )
       )
     })
@@ -257,7 +275,7 @@ mod_onde_server <- function(id, dados, municipio) {
 
     # Montando a tabela do ranking conforme medida, ano e escopo escolhidos
     tabela_ranking <- shiny::reactive({
-      base <- valores_ano(dados, as.integer(input$ano), input$medida)
+      base <- valores_ano(dados, ano(), input$medida)
       escopo <- input$escopo
       if (!is.null(escopo) && !identical(escopo, "nacional")) {
         base <- base[base$sigla_uf == escopo, ]
@@ -290,7 +308,7 @@ mod_onde_server <- function(id, dados, municipio) {
       htmltools::tags$p(
         class = "bloco-descricao",
         paste0(
-          "A primeira posição indica o município com menor valor no ",
+          "A primeira posição indica o município com menor valor na ",
           nome_medida(medida, prefixo_bloco = TRUE),
           " do escopo escolhido, que é a maior prioridade de atenção."
         )
@@ -309,7 +327,7 @@ mod_onde_server <- function(id, dados, municipio) {
       }
       paste0(
         formatar_inteiro(total), " municípios ", local,
-        " em ", input$ano, " · ", nome_medida(input$medida, prefixo_bloco = TRUE)
+        " em ", ano(), " · ", nome_medida(input$medida, prefixo_bloco = TRUE)
       )
     })
 
@@ -360,10 +378,7 @@ mod_onde_server <- function(id, dados, municipio) {
         defaultSelected = if (length(destaque) > 0) destaque else NULL,
         columns = list(
           posicao = reactable::colDef(
-            name = "Pos.", width = 62, align = "right", sticky = "left",
-            cell = reactable::JS(
-              "function (cellInfo) { return cellInfo.value + 'º'; }"
-            )
+            name = "Prioridade", width = 88, align = "right", sticky = "left"
           ),
           municipio = reactable::colDef(name = "Município", minWidth = 170),
           sigla_uf = reactable::colDef(name = "UF", width = 54),
